@@ -83,8 +83,10 @@
   <!-- ===== SECTION: Activation ===== -->
   <section class="story-section" id="s-activation">
     <div class="story-content">
-      <h2 class="reveal">And decides.</h2>
-      <p class="reveal delay-1">The neuron squishes its answer through an <em>activation function</em> — turning any number into a value between 0 and 1. Like a confidence score.</p>
+      <h2 class="reveal">Then it squishes the result.</h2>
+      <p class="reveal delay-1">After multiplying inputs by weights and adding the bias, the neuron has a raw number — called the <strong>weighted sum</strong>. It could be anything: -50, 3.7, 1000. That's not very useful on its own.</p>
+      <p class="reveal delay-1" style="margin-top:0.8rem;">So the neuron passes that number through an <strong>activation function</strong> — a formula that squishes any number down to a range between 0 and 1. Think of it like a dimmer switch: no matter how hard you crank the input, the output stays between "off" (0) and "fully on" (1).</p>
+      <p class="reveal delay-1" style="margin-top:0.8rem;">The most common one is called <strong>sigmoid</strong>. Feed it -100 and you get basically 0. Feed it 0 and you get exactly 0.5. Feed it +100 and you get basically 1. The S-shaped curve below shows exactly how it maps any input to that 0–1 range — and the orange dot is where your neuron's weighted sum lands right now.</p>
       <div class="activation-display reveal delay-2">
         <div class="computation-flow">
           <div class="comp-box">
