@@ -327,7 +327,7 @@
     });
 
     $('hint-btn').addEventListener('click', () => {
-      $('activity-status').innerHTML = `<strong>💡 Hint:</strong> Try weight ≈ 3.0 and bias ≈ -16.5. A high weight makes the sigmoid steep (sharp cutoff), and the negative bias shifts the threshold to x = 5. The math: weight × 5 + bias ≈ 0, so sigmoid ≈ 0.5 right at the boundary.`;
+      $('activity-status').innerHTML = `<strong>💡 Hint:</strong> Try weight ≈ 1.0 and bias ≈ -5.0. The idea: at x = 5, weight × 5 + bias = 0, so sigmoid outputs 0.5 — right on the boundary. Above 5, the output climbs toward 1. Below 5, it drops toward 0. A higher weight (like 2 or 3) makes the cutoff sharper.`;
     });
   </script>
 </body>
