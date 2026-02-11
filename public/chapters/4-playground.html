@@ -59,7 +59,7 @@
     <div class="section fade-in-up delay-1">
       <h2>⚙️ Understanding Every Setting</h2>
 
-      <p>Let's go through each option so you know exactly what you're tweaking.</p>
+      <p>Let's go through each option so you know exactly what you're tweaking. Understanding these settings is the difference between "randomly clicking buttons" and "actually doing machine learning." Each one corresponds to a real decision that ML engineers make every day.</p>
 
       <h3>📐 Dataset</h3>
       <p>The <strong>dataset</strong> is the shape of data the network needs to learn to separate. Think of it as the "puzzle" you're giving the network. Each dataset places dots on the canvas in a different pattern, and the network's job is to draw a boundary between the two groups.</p>
@@ -74,7 +74,8 @@
       <h3>🏗️ Architecture (Hidden Layers)</h3>
       <p>This controls how many <strong>hidden layers</strong> your network has and how many <strong>neurons</strong> are in each one. Use the <strong>"+ Layer"</strong> and <strong>"- Layer"</strong> buttons to add or remove layers, and the sliders to set how many neurons each layer has (from 1 to 12).</p>
       <p>Think of it like this: each layer is a level of thinking. One layer can detect simple features ("is the dot on the left or right?"). Two layers can combine those features ("is the dot in the top-left quadrant?"). Three layers can detect even more abstract patterns ("is the dot on this spiral arm?").</p>
-      <p><strong>More layers</strong> = can learn more complex patterns, but takes longer to train. <strong>More neurons per layer</strong> = more nuance at each thinking level.</p>
+      <p><strong>More layers</strong> = can learn more complex patterns, but takes longer to train and needs more data. <strong>More neurons per layer</strong> = more nuance at each thinking level. A common beginner mistake is making the network way too big for a simple problem — start small and add complexity only when needed.</p>
+      <p><strong>Rule of thumb:</strong> Start with 1–2 layers of 4 neurons each. If the network can't learn the pattern after training, add more. If it learns too fast and the boundary looks wiggly and overfit, you might have too many neurons — try reducing or adding regularization.</p>
 
       <h3>📏 Learning Rate (LR)</h3>
       <p>The <strong>learning rate</strong> controls how big each adjustment step is when the network learns. Imagine you're walking toward a target with your eyes closed, and after each step someone tells you which direction to go:</p>
@@ -83,7 +84,8 @@
         <li><strong>Low learning rate</strong> (like 0.001) = taking tiny baby steps. You'll get there eventually, but it takes <em>forever</em>.</li>
         <li><strong>Just right</strong> (usually 0.01–0.1) = steady progress toward the goal.</li>
       </ul>
-      <p>Try cranking the learning rate to 1.0 and watch the loss curve bounce around wildly. Then try 0.001 and watch it barely move. Finding the sweet spot is a real skill in machine learning!</p>
+      <p><strong>Recommended starting point:</strong> Try <strong>0.05</strong>. This works well for most datasets in this playground. Once you're comfortable, experiment with extremes to see what happens — that's the whole point!</p>
+      <p>Try cranking the learning rate to 1.0 and watch the loss curve bounce around wildly. Then try 0.001 and watch it barely move. Finding the sweet spot is a real skill in machine learning — in industry, people often try dozens of learning rates to find the best one for their specific problem.</p>
 
       <h3>🔧 Activation Function</h3>
       <p>The <strong>activation function</strong> is the "squishing function" each neuron uses to transform its output. You met these in earlier chapters:</p>
