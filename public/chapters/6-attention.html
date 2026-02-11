@@ -206,7 +206,7 @@
 
       <div class="interactive-area">
         <input type="text" id="attn-input" value="The cat sat on the mat" style="width:100%;padding:12px 16px;border:2px solid var(--card-border);border-radius:var(--radius-sm);font-family:inherit;font-size:1rem;outline:none;" placeholder="Type a sentence...">
-        <canvas id="attn-canvas" width="800" height="550" style="margin-top:16px;"></canvas>
+        <canvas id="attn-canvas" width="800" height="550" style="margin-top:16px; width:100%; max-width:800px;"></canvas>
         <div class="narration" style="margin-top:12px;">Each row shows how much a word "attends to" every other word. The diagonal is often strong (words attend to themselves). Related words like "cat" and "sat" may show stronger connections.</div>
       </div>
 
@@ -381,9 +381,9 @@
       const w = canvas.width, h = canvas.height;
       ctx.clearRect(0, 0, w, h);
 
-      const margin = 100;
-      const cellW = Math.min(50, (w - margin) / n);
-      const cellH = Math.min(40, (h - margin) / n);
+      const margin = 120;
+      const cellW = Math.min(80, (w - margin) / n);
+      const cellH = Math.min(65, (h - margin) / n);
       const startX = margin;
       const startY = margin;
 
@@ -419,7 +419,7 @@
           // Value text
           if (cellW > 25) {
             ctx.fillStyle = val > 0.3 ? '#fff' : '#64748b';
-            ctx.font = '9px Inter, sans-serif';
+            ctx.font = '12px Inter, sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText(val.toFixed(2), startX + j * cellW + cellW / 2, startY + i * cellH + cellH / 2 + 3);
           }
