@@ -77,13 +77,14 @@
 
       <p>On the right, you'll see a visual diagram: the input flows in from the left, gets multiplied by the weight along the connection line, enters the neuron (the big purple circle), gets the bias added, and then passes through the sigmoid curve at the bottom. The orange dot on the sigmoid curve shows where your current weighted sum lands.</p>
 
-      <p><strong>Things to try:</strong></p>
+      <div class="collapsible-header">💡 Things to try</div><div class="collapsible-body">
       <ul>
         <li>Set the weight to <strong>0</strong>. What happens? (The neuron ignores the input entirely!)</li>
         <li>Set the weight to a <strong>negative number</strong>. Now higher inputs make the output <em>lower</em>. The neuron is "anti-correlated" with the input.</li>
         <li>Crank the bias to <strong>+5</strong>. The neuron is always excited, no matter what the input is — it has a very strong gut feeling of "yes!"</li>
         <li>Set a large weight (like 3) and sweep the input from -5 to 10. Watch how the sigmoid curve creates a sharp "switch" from 0 to 1.</li>
       </ul>
+</div>
 
       <div class="interactive-area">
         <div class="grid-2">

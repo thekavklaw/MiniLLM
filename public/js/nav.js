@@ -82,3 +82,16 @@ if (typeof window !== 'undefined') {
     else if (document.body.dataset.page === 'home') Nav.injectNav();
   });
 }
+
+// Collapsible sections
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.collapsible-header').forEach(header => {
+    header.addEventListener('click', () => {
+      header.classList.toggle('open');
+      const body = header.nextElementSibling;
+      if (body && body.classList.contains('collapsible-body')) {
+        body.classList.toggle('open');
+      }
+    });
+  });
+});

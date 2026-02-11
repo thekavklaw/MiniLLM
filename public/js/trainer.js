@@ -20,8 +20,36 @@
         if (customArea) customArea.style.display = 'none';
         loadPreview(activePreset);
       }
+
+      // Reset model state when switching presets
+      resetModel();
     });
   });
+
+  function resetModel() {
+    modelReady = false;
+    const trainBtn = document.getElementById('train-btn');
+    if (trainBtn) {
+      trainBtn.disabled = false;
+      trainBtn.textContent = '⚡ Load Neural Network';
+    }
+    const dashboard = document.getElementById('training-dashboard');
+    if (dashboard) { dashboard.style.display = 'none'; dashboard.innerHTML = ''; }
+    const sampleEl = document.getElementById('sample-text');
+    if (sampleEl) { sampleEl.style.display = 'none'; sampleEl.innerHTML = ''; }
+    const commentary = document.getElementById('output-commentary');
+    if (commentary) commentary.style.display = 'none';
+    const step4 = document.getElementById('train-step-4');
+    if (step4) step4.style.display = 'none';
+    const genOutput = document.getElementById('gen-output');
+    if (genOutput) genOutput.innerHTML = '';
+    const shareLink = document.getElementById('share-link');
+    if (shareLink) shareLink.style.display = 'none';
+    const shareBtn = document.getElementById('share-btn');
+    if (shareBtn) { shareBtn.disabled = false; shareBtn.textContent = '📤 Share'; }
+    const again = document.getElementById('gen-again-btn');
+    if (again) again.style.display = 'none';
+  }
 
   async function loadPreview(name) {
     const presets = { shakespeare: '/data/shakespeare.txt', recipes: '/data/recipes.txt', python: '/data/python.txt' };
@@ -54,7 +82,7 @@
   if (trainBtn) {
     trainBtn.addEventListener('click', async () => {
       if (activePreset === 'custom') {
-        alert('Custom text training happens in your browser. For the neural network demo, pick a preset — these models were pre-trained on the server.');
+        alert('Custom text uses the Markov chain in the bonus section below — scroll down! The neural network models are pre-trained on Shakespeare, Recipes, and Python.');
         return;
       }
 
@@ -62,21 +90,21 @@
       trainBtn.textContent = '🧠 Loading neural network...';
 
       try {
-        // Verify model is loaded on server
         const infoResp = await fetch('/api/model-info');
         const info = await infoResp.json();
 
         if (!info.models.includes(activePreset)) {
           trainBtn.textContent = '❌ Model not available';
+          setTimeout(resetModel, 2000);
           return;
         }
 
-        // Test generation
+        // Generate sample
         const t0 = performance.now();
         const testResp = await fetch('/api/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: activePreset === 'python' ? 'def ' : 'The ', preset: activePreset, temperature: 0.7, length: 100 })
+          body: JSON.stringify({ prompt: activePreset === 'python' ? 'def ' : 'The ', preset: activePreset, temperature: 0.7, length: 150 })
         });
         const testData = await testResp.json();
         const elapsed = (performance.now() - t0).toFixed(0);
@@ -101,24 +129,56 @@
               </div>
               <div class="stat-item">
                 <div class="stat-value">${elapsed}ms</div>
-                <div class="stat-label">Response time</div>
+                <div class="stat-label">Inference time</div>
               </div>
             </div>
             <div class="train-explanation">
               <p>This is a <strong>real neural network</strong> — an LSTM (Long Short-Term Memory) with 35,900 trained parameters. 
-              It learned to predict the next character by reading thousands of examples. 
-              ChatGPT works on the exact same principle: <em>given text, predict what comes next.</em> 
-              GPT-4 just does it with 1.8 trillion parameters instead of 35,900.</p>
+              It learned to predict the next character by reading through training text thousands of times, adjusting its weights each pass. 
+              ChatGPT works on the exact same principle: <em>given some text, predict what comes next.</em> 
+              The difference is scale — GPT-4 has <strong>1.8 trillion</strong> parameters (50 million times more than this model).</p>
+              <p style="margin-top:0.7rem; font-size:0.85rem;">
+              <strong>Compute comparison:</strong> This tiny LSTM trained in about 2 minutes on a single CPU core and uses ~140KB of memory. 
+              GPT-4 reportedly took <strong>$100+ million</strong> of compute to train across thousands of GPUs running for months.
+              The same fundamental math — just at a completely different scale.</p>
             </div>
           `;
         }
 
-        // Show sample
+        // Show sample with commentary
         const sampleEl = document.getElementById('sample-text');
         if (sampleEl && testData.text) {
           const seedText = activePreset === 'python' ? 'def ' : 'The ';
           sampleEl.style.display = 'block';
           sampleEl.innerHTML = `<strong>Sample output:</strong><br><span class="seed-text">${escapeHtml(seedText)}</span><span class="gen-text">${escapeHtml(testData.text)}</span>`;
+        }
+
+        // Show commentary
+        const commentary = document.getElementById('output-commentary');
+        if (commentary) {
+          commentary.style.display = 'block';
+          const presetCommentary = {
+            shakespeare: `Notice how the output <em>almost</em> sounds like Shakespeare — it picked up patterns like rhyming couplets, 
+              "thee" and "thy," and iambic-ish rhythm. But look closer: many "words" are gibberish ("thith," "fant," "shoml"). 
+              The network learned that certain letter combinations are common in Shakespeare, but with only 35,900 parameters and 15KB of training text, 
+              it can't learn actual English vocabulary or grammar. <strong>GPT-4 doesn't have this problem</strong> — trained on 13 trillion tokens 
+              (roughly 50 million books), it has enough capacity to learn every word, every grammatical rule, and even subtle things like sarcasm and humor.
+              That's the magic of scale: the same "predict the next character" algorithm, but with 50 million times more parameters and billions of times more data.`,
+            recipes: `The output looks recipe-ish — you might spot fragments like "Cook for," "minutes," "the tomato." 
+              But the instructions don't make sense: quantities are wrong, steps are garbled, ingredients appear randomly. 
+              Our network has just enough capacity to learn that recipe text contains words like "cup," "heat," and "minutes" — 
+              but not enough to understand what a recipe actually <em>is</em>. <strong>GPT-4, with 1.8 trillion parameters,</strong> 
+              can write a complete, coherent recipe from scratch because it's seen millions of real recipes and understands 
+              the structure: ingredients list → prep steps → cooking steps → serving suggestion. Same algorithm, vastly different capability.`,
+            python: `You might see fragments that look code-like: "def," parentheses, indentation patterns. 
+              But the "code" is nonsensical — variable names are random characters, function bodies don't compute anything meaningful. 
+              With only 2,600 characters of training data and 35,900 parameters, the model learned Python's <em>syntax patterns</em> 
+              (indentation, colons, parentheses) but has zero understanding of what code <em>does</em>. 
+              <strong>GPT-4 can write working programs</strong> because it trained on billions of lines of real code and learned 
+              not just syntax, but logic, algorithms, and debugging strategies. The gap between our toy model and GPT is like 
+              the gap between a toddler scribbling and a novelist writing a book — same tool (language), incomparable skill.`
+          };
+          commentary.innerHTML = presetCommentary[activePreset] || '';
         }
 
         trainBtn.textContent = '✅ Neural network loaded!';
@@ -131,7 +191,7 @@
       } catch (e) {
         console.error(e);
         trainBtn.textContent = '❌ Failed to connect';
-        setTimeout(() => { trainBtn.textContent = '⚡ Load Neural Network'; trainBtn.disabled = false; }, 2000);
+        setTimeout(resetModel, 2000);
       }
     });
   }
@@ -208,16 +268,18 @@
     shareBtn.addEventListener('click', async () => {
       if (!modelReady) return;
       shareBtn.disabled = true;
-      shareBtn.textContent = '⏳ Generating sharable output...';
+      shareBtn.textContent = '⏳ Saving...';
 
       try {
         const temp = tempSlider ? parseFloat(tempSlider.value) : 0.7;
+        // Generate fresh output for sharing
         const resp = await fetch('/api/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ prompt: genInput ? genInput.value || 'The ' : 'The ', preset: activePreset, temperature: temp, length: 300 })
         });
         const data = await resp.json();
+        if (data.error) throw new Error(data.error);
 
         const saveResp = await fetch('/api/models/save', {
           method: 'POST',
@@ -225,22 +287,30 @@
           body: JSON.stringify({
             type: 'lstm-output',
             preset: activePreset,
-            prompt: genInput ? genInput.value : 'The ',
+            prompt: genInput ? genInput.value || 'The ' : 'The ',
             output: data.text,
-            temperature: temp
+            temperature: temp,
+            model: { architecture: 'LSTM', params: 35900, units: 64 }
           })
         });
+
+        if (!saveResp.ok) {
+          const err = await saveResp.json().catch(() => ({}));
+          throw new Error(err.error || 'Save failed');
+        }
         const saveData = await saveResp.json();
 
         const shareLink = document.getElementById('share-link');
-        if (shareLink) {
-          const url = `${window.location.origin}/model.html?id=${saveData.id}`;
+        if (shareLink && saveData.id) {
+          const url = `${window.location.origin}/shared.html?id=${saveData.id}`;
           shareLink.innerHTML = `<strong>Share link:</strong> <a href="${url}" target="_blank">${url}</a>`;
           shareLink.style.display = 'block';
         }
-        shareBtn.textContent = '📤 Shared!';
+        shareBtn.textContent = '✅ Shared!';
+        setTimeout(() => { shareBtn.textContent = '📤 Share'; shareBtn.disabled = false; }, 3000);
       } catch (e) {
-        shareBtn.textContent = '❌ Failed';
+        console.error('Share error:', e);
+        shareBtn.textContent = '❌ ' + (e.message || 'Failed');
         setTimeout(() => { shareBtn.textContent = '📤 Share'; shareBtn.disabled = false; }, 2000);
       }
     });
