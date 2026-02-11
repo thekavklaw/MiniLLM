@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const crypto = require('crypto');
+const fs = require('fs');
 const Database = require('better-sqlite3');
 const app = express();
 const PORT = process.env.PORT || 3862;
@@ -31,34 +32,109 @@ function checkRateLimit(ip, maxReqs, windowMs) {
   return entry.count <= maxReqs;
 }
 
+// ===== Markov Chain Builder =====
+const markovChains = {};
+const MARKOV_ORDER = 4;
+
+function buildMarkovChain(text, order) {
+  const chain = {};
+  for (let i = 0; i <= text.length - order - 1; i++) {
+    const key = text.substring(i, i + order);
+    const next = text[i + order];
+    if (!chain[key]) chain[key] = {};
+    chain[key][next] = (chain[key][next] || 0) + 1;
+  }
+  return chain;
+}
+
+function generateFromChain(chain, seed, length, order) {
+  // Find best starting key from seed
+  let current = seed.slice(-order);
+  if (!chain[current]) {
+    // Try to find a key that starts with end of seed
+    for (let len = order - 1; len >= 1; len--) {
+      const partial = seed.slice(-len);
+      const match = Object.keys(chain).find(k => k.startsWith(partial));
+      if (match) { current = match; break; }
+    }
+    if (!chain[current]) {
+      const keys = Object.keys(chain);
+      current = keys[Math.floor(Math.random() * keys.length)];
+    }
+  }
+
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    const options = chain[current];
+    if (!options) break;
+    // Weighted random selection
+    const entries = Object.entries(options);
+    const total = entries.reduce((s, [, c]) => s + c, 0);
+    let r = Math.random() * total;
+    let next = entries[0][0];
+    for (const [char, count] of entries) {
+      r -= count;
+      if (r <= 0) { next = char; break; }
+    }
+    result += next;
+    current = current.slice(1) + next;
+  }
+  return result;
+}
+
+// Load preset data and build chains at startup
+const dataDir = path.join(__dirname, 'public', 'data');
+['shakespeare', 'recipes', 'python'].forEach(name => {
+  try {
+    const text = fs.readFileSync(path.join(dataDir, `${name}.txt`), 'utf-8');
+    markovChains[name] = buildMarkovChain(text, MARKOV_ORDER);
+    console.log(`Markov chain built for ${name}: ${Object.keys(markovChains[name]).length} states`);
+  } catch (e) {
+    console.error(`Failed to build chain for ${name}:`, e.message);
+  }
+});
+
 // Middleware
 app.use(express.json({ limit: '6mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Health
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', name: 'MiniLLM', version: '2.0.0' });
+  res.json({ status: 'ok', name: 'MiniLLM', version: '3.0.0' });
+});
+
+// ===== Markov Completion Endpoint =====
+app.get('/api/complete', (req, res) => {
+  const ip = req.headers['x-forwarded-for'] || req.ip;
+  if (!checkRateLimit(ip, 10, 60000)) {
+    return res.status(429).json({ error: 'Rate limited. Max 10 requests per minute.' });
+  }
+
+  const { text, preset, length } = req.query;
+  if (!text || !preset) return res.status(400).json({ error: 'Missing text or preset parameter.' });
+
+  const chain = markovChains[preset];
+  if (!chain) return res.status(404).json({ error: `Unknown preset: ${preset}` });
+
+  const maxLen = Math.min(parseInt(length) || 100, 200);
+  const generated = generateFromChain(chain, text, maxLen, MARKOV_ORDER);
+  res.json({ text: generated });
 });
 
 // Save model
 app.post('/api/models/save', (req, res) => {
   const ip = req.headers['x-forwarded-for'] || req.ip;
-
-  // Rate limit: 5 saves per hour
   if (!checkRateLimit(ip, 5, 3600000)) {
     return res.status(429).json({ error: 'Rate limit exceeded. Max 5 saves per hour.' });
   }
 
   const data = JSON.stringify(req.body);
   const sizeBytes = Buffer.byteLength(data);
-
-  // Max 5MB
   if (sizeBytes > 5 * 1024 * 1024) {
     return res.status(413).json({ error: 'Model too large. Max 5MB.' });
   }
 
   const id = crypto.randomBytes(8).toString('hex');
-
   try {
     db.prepare('INSERT INTO models (id, data, preset, ip, size_bytes) VALUES (?, ?, ?, ?, ?)')
       .run(id, data, req.body.preset || 'unknown', ip, sizeBytes);
@@ -76,7 +152,7 @@ app.get('/api/models/:id', (req, res) => {
   res.json({ ...JSON.parse(row.data), createdAt: row.created_at });
 });
 
-// Model info (without full weights)
+// Model info
 app.get('/api/models/:id/info', (req, res) => {
   const row = db.prepare('SELECT preset, created_at, size_bytes FROM models WHERE id = ?').get(req.params.id);
   if (!row) return res.status(404).json({ error: 'Model not found.' });

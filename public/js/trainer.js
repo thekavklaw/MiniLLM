@@ -1,399 +1,405 @@
-// MiniLLM — TensorFlow.js Character-Level LSTM Trainer
+// MiniLLM — Interactive Text Classifier + Markov Completion
 (function() {
   'use strict';
 
-  let trainingData = '';
-  let model = null;
-  let charToIdx = {};
-  let idxToChar = {};
-  let vocabSize = 0;
-  let seqLength = 40;
-  let isTraining = false;
-  let lossHistory = [];
-
-  // ===== Preset data loading =====
-  const presets = {
-    shakespeare: '/data/shakespeare.txt',
-    recipes: '/data/recipes.txt',
-    python: '/data/python.txt'
+  // ===== PRESETS =====
+  const PRESETS = {
+    sentiment: {
+      categories: ['Happy 😊', 'Sad 😢'],
+      examples: {
+        'Happy 😊': [
+          "I'm having the best day ever!", "This makes me so happy", "I love spending time with friends",
+          "What a wonderful surprise", "I feel so grateful today", "Everything is going great",
+          "This is absolutely amazing", "I can't stop smiling", "Today was perfect in every way",
+          "I'm so excited about this", "Life is beautiful", "I feel fantastic right now",
+          "This party is so much fun", "I got the promotion I wanted", "My heart is full of joy",
+          "What a gorgeous day outside", "I'm proud of what I accomplished", "This food is delicious",
+          "Spending time with family makes me happy", "I just love this song so much"
+        ],
+        'Sad 😢': [
+          "I feel so lonely today", "Nothing seems to go right", "I miss my old friends",
+          "This makes me want to cry", "I'm feeling really down", "Everything feels hopeless",
+          "I can't stop feeling sad", "Today was the worst day", "I feel empty inside",
+          "Nobody understands how I feel", "I'm so disappointed", "Life feels meaningless right now",
+          "I lost something very important to me", "I feel like giving up", "The world seems so dark",
+          "I can't find any motivation", "I'm heartbroken", "Everything reminds me of what I lost",
+          "I just want to be alone and cry", "Nothing makes me happy anymore"
+        ]
+      }
+    },
+    spam: {
+      categories: ['Spam 🚫', 'Not Spam ✅'],
+      examples: {
+        'Spam 🚫': [
+          "CONGRATULATIONS! You won a free iPhone!", "Click here to claim your prize money",
+          "Make $5000 per day working from home", "Buy cheap pills online now",
+          "You have been selected as a winner", "Free gift card waiting for you",
+          "Act now! Limited time offer expires today", "Enlarge your bank account instantly",
+          "Nigerian prince needs your help transferring money", "You won the lottery! Send your details",
+          "Hot singles in your area want to meet", "Discount medications shipped overnight",
+          "Your account has been compromised click here", "Make money fast with this one weird trick",
+          "FREE FREE FREE no credit card needed", "Congratulations you are our 1 millionth visitor",
+          "Double your investment guaranteed no risk", "Urgent: verify your bank details now",
+          "Amazing weight loss secret doctors hate", "Get rich quick with crypto secrets"
+        ],
+        'Not Spam ✅': [
+          "Hey, are we still meeting for lunch?", "The project deadline is next Friday",
+          "Can you review my pull request?", "Meeting moved to 3pm tomorrow",
+          "Here are the notes from today's standup", "Happy birthday! Hope you have a great day",
+          "The weather looks nice this weekend", "Did you see the game last night?",
+          "I attached the quarterly report", "Let me know when you're free to chat",
+          "Thanks for sending that over", "The new feature is ready for testing",
+          "Can you pick up some groceries on the way home?", "I'll be working from home tomorrow",
+          "Great job on the presentation today", "The kids have soccer practice at 4",
+          "Here's the recipe you asked about", "Flight confirmation for next Tuesday",
+          "Reminder: dentist appointment Thursday 2pm", "The package was delivered this morning"
+        ]
+      }
+    },
+    catdog: {
+      categories: ['Cat 🐱', 'Dog 🐶'],
+      examples: {
+        'Cat 🐱': [
+          "It purrs when you pet it softly", "Sleeps in a sunny spot by the window all day",
+          "Knocks things off tables for fun", "Very independent and does its own thing",
+          "Uses a litter box and grooms itself", "Loves to chase laser pointers around the room",
+          "Climbs up the curtains and gets stuck", "Hisses when strangers come near",
+          "Curls up in a tiny ball on the couch", "Brings you dead mice as presents",
+          "Has retractable claws and whiskers", "Meows loudly at 3am for no reason",
+          "Fits perfectly in a cardboard box", "Ignores you completely then wants attention",
+          "Stares at birds through the window for hours"
+        ],
+        'Dog 🐶': [
+          "Wags its tail excitedly when you come home", "Loves to play fetch in the park",
+          "Barks at the mailman every single day", "Goes on walks and sniffs everything",
+          "Loyal companion that follows you everywhere", "Rolls over for belly rubs",
+          "Chews on shoes and furniture when bored", "Jumps up to greet visitors at the door",
+          "Pants with tongue out after running around", "Digs holes in the backyard constantly",
+          "Loves swimming and getting muddy", "Howls when it hears sirens outside",
+          "Trained to sit stay and shake hands", "Drools when it sees food on the table",
+          "Protects the house and barks at strangers"
+        ]
+      }
+    }
   };
-  let activePreset = 'shakespeare';
 
-  // Bind preset buttons
-  document.querySelectorAll('.preset-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      const preset = btn.dataset.preset;
-      activePreset = preset;
+  let currentPreset = 'sentiment';
+  let categories = [];
+  let examples = {};  // { category: [text, ...] }
+  let model = null;
+  let vocab = {};     // word -> index
+  let vocabSize = 0;
 
-      const customArea = document.getElementById('custom-text');
-      if (preset === 'custom') {
-        customArea.style.display = 'block';
-        trainingData = customArea.value;
-        updatePreview();
-      } else {
-        customArea.style.display = 'none';
-        loadPreset(preset);
-      }
+  // ===== INIT =====
+  function init() {
+    document.querySelectorAll('#train-step-1 .preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#train-step-1 .preset-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentPreset = btn.dataset.preset;
+        loadPreset(currentPreset);
+      });
     });
-  });
 
-  const customArea = document.getElementById('custom-text');
-  if (customArea) {
-    customArea.addEventListener('input', () => {
-      trainingData = customArea.value;
-      updatePreview();
+    document.getElementById('add-example-btn').addEventListener('click', addExample);
+    document.getElementById('add-example-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') addExample();
     });
-  }
+    document.getElementById('train-btn').addEventListener('click', trainModel);
+    document.getElementById('test-input')?.addEventListener('input', classify);
+    document.getElementById('share-btn')?.addEventListener('click', shareModel);
 
-  async function loadPreset(name) {
-    if (!presets[name]) return;
-    try {
-      const resp = await fetch(presets[name]);
-      trainingData = await resp.text();
-      updatePreview();
-    } catch (e) {
-      console.error('Failed to load preset:', e);
-    }
-  }
-
-  function updatePreview() {
-    const el = document.getElementById('preview-text');
-    if (el) {
-      el.textContent = trainingData.slice(0, 300) + (trainingData.length > 300 ? '...' : '');
-    }
-  }
-
-  // Load default preset
-  loadPreset('shakespeare');
-
-  // Temperature slider
-  const tempSlider = document.getElementById('temperature');
-  const tempVal = document.getElementById('temp-val');
-  if (tempSlider) {
-    tempSlider.addEventListener('input', () => {
-      if (tempVal) tempVal.textContent = parseFloat(tempSlider.value).toFixed(1);
+    // Custom category setup
+    document.getElementById('add-cat-btn')?.addEventListener('click', addCustomCategory);
+    document.getElementById('custom-cat-input')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') addCustomCategory();
     });
+
+    loadPreset('sentiment');
+    initMarkov();
   }
 
-  // ===== Build vocabulary =====
-  function buildVocab(text) {
-    const chars = [...new Set(text.split(''))].sort();
-    charToIdx = {};
-    idxToChar = {};
-    chars.forEach((c, i) => { charToIdx[c] = i; idxToChar[i] = c; });
-    vocabSize = chars.length;
-    return chars;
-  }
-
-  // ===== Create model =====
-  function createModel(size) {
-    const units = size === 'tiny' ? 64 : size === 'small' ? 128 : 256;
-    const numLayers = size === 'medium' ? 2 : 1;
-
-    const mdl = tf.sequential();
-    for (let i = 0; i < numLayers; i++) {
-      mdl.add(tf.layers.lstm({
-        units,
-        returnSequences: i < numLayers - 1,
-        inputShape: i === 0 ? [seqLength, vocabSize] : undefined
-      }));
-    }
-    mdl.add(tf.layers.dense({ units: vocabSize, activation: 'softmax' }));
-    mdl.compile({ optimizer: tf.train.adam(0.01), loss: 'categoricalCrossentropy' });
-    return mdl;
-  }
-
-  // ===== Prepare training data =====
-  function prepareData(text, batchSize) {
-    const xs = [];
-    const ys = [];
-    const step = Math.max(3, Math.floor(text.length / (batchSize * seqLength)));
-
-    for (let i = 0; i < text.length - seqLength - 1; i += step) {
-      if (xs.length >= batchSize) break;
-      const inputSeq = text.slice(i, i + seqLength);
-      const target = text[i + seqLength];
-      if (charToIdx[target] === undefined) continue;
-
-      // One-hot encode input sequence
-      const xArr = [];
-      let valid = true;
-      for (let j = 0; j < seqLength; j++) {
-        const idx = charToIdx[inputSeq[j]];
-        if (idx === undefined) { valid = false; break; }
-        const oh = new Array(vocabSize).fill(0);
-        oh[idx] = 1;
-        xArr.push(oh);
-      }
-      if (!valid) continue;
-
-      const yArr = new Array(vocabSize).fill(0);
-      yArr[charToIdx[target]] = 1;
-
-      xs.push(xArr);
-      ys.push(yArr);
-    }
-
-    return {
-      x: tf.tensor3d(xs),
-      y: tf.tensor2d(ys)
-    };
-  }
-
-  // ===== Generate text =====
-  function generateText(prompt, length, temperature) {
-    if (!model || vocabSize === 0) return '';
-
-    temperature = temperature || 0.8;
-    let input = prompt.slice(-seqLength).padStart(seqLength, ' ');
-    let result = '';
-
-    for (let i = 0; i < length; i++) {
-      const xArr = [];
-      for (let j = 0; j < seqLength; j++) {
-        const oh = new Array(vocabSize).fill(0);
-        const idx = charToIdx[input[j]];
-        if (idx !== undefined) oh[idx] = 1;
-        xArr.push(oh);
-      }
-
-      const pred = model.predict(tf.tensor3d([xArr]));
-      const logits = pred.dataSync();
-
-      // Temperature sampling
-      const scaled = logits.map(l => Math.exp(Math.log(Math.max(l, 1e-8)) / temperature));
-      const sum = scaled.reduce((a, b) => a + b, 0);
-      const probs = scaled.map(s => s / sum);
-
-      // Sample from distribution
-      let r = Math.random();
-      let idx = 0;
-      for (let j = 0; j < probs.length; j++) {
-        r -= probs[j];
-        if (r <= 0) { idx = j; break; }
-      }
-
-      const char = idxToChar[idx] || ' ';
-      result += char;
-      input = input.slice(1) + char;
-
-      pred.dispose();
-    }
-
-    return result;
-  }
-
-  // ===== Draw loss chart =====
-  function drawLossChart() {
-    const canvas = document.getElementById('loss-chart');
-    if (!canvas || lossHistory.length === 0) return;
-    const ctx = canvas.getContext('2d');
-    const W = canvas.width, H = canvas.height;
-    ctx.clearRect(0, 0, W, H);
-
-    const maxLoss = Math.max(...lossHistory, 0.1);
-    const minLoss = Math.min(...lossHistory);
-    const range = maxLoss - minLoss || 1;
-
-    // Fill gradient
-    ctx.beginPath();
-    ctx.moveTo(0, H);
-    lossHistory.forEach((loss, i) => {
-      const x = (i / (lossHistory.length - 1)) * W;
-      const y = H - ((loss - minLoss) / range) * (H - 20) - 10;
-      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    });
-    ctx.lineTo(W, H);
-    ctx.closePath();
-    const grad = ctx.createLinearGradient(0, 0, 0, H);
-    grad.addColorStop(0, 'rgba(139, 92, 246, 0.2)');
-    grad.addColorStop(1, 'rgba(139, 92, 246, 0)');
-    ctx.fillStyle = grad;
-    ctx.fill();
-
-    // Line
-    ctx.beginPath();
-    lossHistory.forEach((loss, i) => {
-      const x = (i / (lossHistory.length - 1)) * W;
-      const y = H - ((loss - minLoss) / range) * (H - 20) - 10;
-      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    });
-    ctx.strokeStyle = '#8b5cf6';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    // Current value dot
-    if (lossHistory.length > 0) {
-      const lastLoss = lossHistory[lossHistory.length - 1];
-      const x = W;
-      const y = H - ((lastLoss - minLoss) / range) * (H - 20) - 10;
-      ctx.fillStyle = '#8b5cf6';
-      ctx.beginPath();
-      ctx.arc(x - 2, y, 4, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-
-  // ===== Training loop =====
-  const trainBtn = document.getElementById('train-btn');
-  if (trainBtn) {
-    trainBtn.addEventListener('click', startTraining);
-  }
-
-  async function startTraining() {
-    if (isTraining) return;
-    if (trainingData.length < 500) {
-      alert('Please provide at least 500 characters of training data.');
+  function loadPreset(name) {
+    const customSetup = document.getElementById('custom-categories-setup');
+    if (name === 'custom') {
+      categories = [];
+      examples = {};
+      customSetup.style.display = 'block';
+      renderExamples();
+      updateCategorySelect();
+      resetTrainState();
       return;
     }
-
-    isTraining = true;
-    trainBtn.disabled = true;
-    trainBtn.textContent = '⏳ Training...';
-    lossHistory = [];
-
-    const dashboard = document.getElementById('training-dashboard');
-    if (dashboard) dashboard.style.display = 'block';
-
-    const sizeEl = document.getElementById('model-size');
-    const size = sizeEl ? sizeEl.value : 'small';
-    const epochs = size === 'tiny' ? 20 : size === 'small' ? 30 : 40;
-    const batchSize = size === 'tiny' ? 64 : size === 'small' ? 128 : 128;
-
-    // Build vocab and model
-    buildVocab(trainingData);
-    model = createModel(size);
-
-    // Prepare data
-    const data = prepareData(trainingData, batchSize);
-
-    // Train
-    for (let epoch = 0; epoch < epochs; epoch++) {
-      if (!isTraining) break;
-
-      const result = await model.fit(data.x, data.y, {
-        epochs: 1,
-        batchSize: 32,
-        shuffle: true,
-        verbose: 0
-      });
-
-      const loss = result.history.loss[0];
-      lossHistory.push(loss);
-
-      // Update UI
-      const dashLoss = document.getElementById('dash-loss');
-      const dashEpoch = document.getElementById('dash-epoch');
-      const progressFill = document.getElementById('progress-fill');
-      const sampleText = document.getElementById('sample-text');
-
-      if (dashLoss) dashLoss.textContent = loss.toFixed(4);
-      if (dashEpoch) dashEpoch.textContent = `${epoch + 1} / ${epochs}`;
-      if (progressFill) progressFill.style.width = `${((epoch + 1) / epochs) * 100}%`;
-
-      drawLossChart();
-
-      // Generate sample every 5 epochs
-      if ((epoch + 1) % 5 === 0 || epoch === epochs - 1) {
-        const seed = trainingData.slice(0, seqLength);
-        const sample = generateText(seed, 100, 0.8);
-        if (sampleText) sampleText.textContent = seed + sample;
-      }
-
-      // Yield to UI
-      await new Promise(r => setTimeout(r, 10));
-    }
-
-    // Cleanup tensors
-    data.x.dispose();
-    data.y.dispose();
-
-    // Training complete — show generate UI
-    trainBtn.textContent = '✅ Done!';
-    isTraining = false;
-
-    const step4 = document.getElementById('train-step-4');
-    if (step4) step4.style.display = 'block';
-
-    // Bind generate
-    const genPrompt = document.getElementById('gen-prompt');
-    const genOutput = document.getElementById('gen-output');
-    if (genPrompt) {
-      genPrompt.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          const prompt = genPrompt.value;
-          const temp = tempSlider ? parseFloat(tempSlider.value) : 0.8;
-          const output = generateText(prompt, 200, temp);
-          if (genOutput) {
-            genOutput.textContent = '';
-            // Typewriter effect
-            let i = 0;
-            const type = () => {
-              if (i < output.length) {
-                genOutput.textContent += output[i];
-                i++;
-                setTimeout(type, 15);
-              }
-            };
-            type();
-          }
-        }
-      });
-    }
+    customSetup.style.display = 'none';
+    const preset = PRESETS[name];
+    if (!preset) return;
+    categories = [...preset.categories];
+    examples = {};
+    categories.forEach(cat => {
+      examples[cat] = [...preset.examples[cat]];
+    });
+    renderExamples();
+    updateCategorySelect();
+    resetTrainState();
   }
 
-  // ===== Share model =====
-  const shareBtn = document.getElementById('share-btn');
-  if (shareBtn) {
-    shareBtn.addEventListener('click', async () => {
-      if (!model) return;
-      try {
-        // Save model to JSON
-        const saveResult = await model.save(tf.io.withSaveHandler(async (artifacts) => {
-          const modelData = {
+  function addCustomCategory() {
+    const input = document.getElementById('custom-cat-input');
+    const name = input.value.trim();
+    if (!name || categories.includes(name)) return;
+    categories.push(name);
+    examples[name] = [];
+    input.value = '';
+    renderExamples();
+    updateCategorySelect();
+  }
+
+  function updateCategorySelect() {
+    const sel = document.getElementById('add-example-cat');
+    sel.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
+  }
+
+  function addExample() {
+    const input = document.getElementById('add-example-input');
+    const cat = document.getElementById('add-example-cat').value;
+    const text = input.value.trim();
+    if (!text || !cat) return;
+    if (!examples[cat]) examples[cat] = [];
+    examples[cat].push(text);
+    input.value = '';
+    renderExamples();
+    resetTrainState();
+  }
+
+  function removeExample(cat, idx) {
+    examples[cat].splice(idx, 1);
+    renderExamples();
+    resetTrainState();
+  }
+
+  function renderExamples() {
+    const container = document.getElementById('category-columns');
+    container.innerHTML = categories.map(cat => `
+      <div class="category-column">
+        <div class="category-header">${cat} <span class="example-count">(${(examples[cat] || []).length})</span></div>
+        <div class="example-list">
+          ${(examples[cat] || []).map((ex, i) => `
+            <div class="example-item">
+              <span class="example-text">${escapeHtml(ex)}</span>
+              <button class="example-remove" data-cat="${cat}" data-idx="${i}">×</button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+
+    container.querySelectorAll('.example-remove').forEach(btn => {
+      btn.addEventListener('click', () => removeExample(btn.dataset.cat, parseInt(btn.dataset.idx)));
+    });
+  }
+
+  function escapeHtml(t) {
+    return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function resetTrainState() {
+    model = null;
+    vocab = {};
+    vocabSize = 0;
+    document.getElementById('train-step-4').style.display = 'none';
+    document.getElementById('train-stats').style.display = 'none';
+    const btn = document.getElementById('train-btn');
+    btn.textContent = '⚡ Train (instant)';
+    btn.disabled = false;
+  }
+
+  // ===== BAG OF WORDS =====
+  function tokenize(text) {
+    return text.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 0);
+  }
+
+  function buildVocab() {
+    vocab = {};
+    let idx = 0;
+    categories.forEach(cat => {
+      (examples[cat] || []).forEach(text => {
+        tokenize(text).forEach(word => {
+          if (!(word in vocab)) vocab[word] = idx++;
+        });
+      });
+    });
+    vocabSize = idx;
+  }
+
+  function textToVector(text) {
+    const vec = new Float32Array(vocabSize);
+    tokenize(text).forEach(word => {
+      if (word in vocab) vec[vocab[word]] = 1;
+    });
+    return vec;
+  }
+
+  // ===== TRAIN =====
+  async function trainModel() {
+    if (categories.length < 2) { alert('Need at least 2 categories.'); return; }
+    const totalExamples = categories.reduce((s, c) => s + (examples[c] || []).length, 0);
+    if (totalExamples < 4) { alert('Need at least 4 examples total.'); return; }
+
+    const btn = document.getElementById('train-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Training...';
+
+    buildVocab();
+
+    // Prepare data
+    const xs = [];
+    const ys = [];
+    categories.forEach((cat, catIdx) => {
+      (examples[cat] || []).forEach(text => {
+        xs.push(Array.from(textToVector(text)));
+        const label = new Array(categories.length).fill(0);
+        label[catIdx] = 1;
+        ys.push(label);
+      });
+    });
+
+    const xTensor = tf.tensor2d(xs);
+    const yTensor = tf.tensor2d(ys);
+
+    // Build model
+    model = tf.sequential();
+    model.add(tf.layers.dense({ inputShape: [vocabSize], units: 64, activation: 'relu' }));
+    model.add(tf.layers.dense({ units: 32, activation: 'relu' }));
+    model.add(tf.layers.dense({ units: categories.length, activation: 'softmax' }));
+    model.compile({ optimizer: tf.train.adam(0.01), loss: 'categoricalCrossentropy', metrics: ['accuracy'] });
+
+    const result = await model.fit(xTensor, yTensor, {
+      epochs: 50,
+      batchSize: xs.length,
+      shuffle: true,
+      verbose: 0
+    });
+
+    xTensor.dispose();
+    yTensor.dispose();
+
+    const finalLoss = result.history.loss[result.history.loss.length - 1];
+    const finalAcc = result.history.acc[result.history.acc.length - 1];
+
+    btn.textContent = '✅ Trained!';
+    const stats = document.getElementById('train-stats');
+    stats.style.display = 'block';
+    stats.innerHTML = `Trained on <strong>${totalExamples}</strong> examples · <strong>${vocabSize}</strong> word vocabulary · Loss: ${finalLoss.toFixed(4)} · Acc: ${(finalAcc * 100).toFixed(0)}%`;
+
+    document.getElementById('train-step-4').style.display = 'block';
+    renderConfidenceBars([]);
+
+    // Focus test input
+    document.getElementById('test-input').focus();
+  }
+
+  // ===== CLASSIFY =====
+  function classify() {
+    if (!model) return;
+    const text = document.getElementById('test-input').value;
+    if (!text.trim()) { renderConfidenceBars([]); return; }
+
+    const vec = textToVector(text);
+    const pred = model.predict(tf.tensor2d([Array.from(vec)]));
+    const probs = pred.dataSync();
+    pred.dispose();
+
+    const results = categories.map((cat, i) => ({ category: cat, confidence: probs[i] }));
+    results.sort((a, b) => b.confidence - a.confidence);
+    renderConfidenceBars(results);
+  }
+
+  function renderConfidenceBars(results) {
+    const container = document.getElementById('confidence-bars');
+    if (!results.length) {
+      container.innerHTML = '<div style="color:var(--text-dim);font-size:0.9rem;padding:1rem 0;">Type something above to see classification results...</div>';
+      return;
+    }
+    container.innerHTML = results.map(r => `
+      <div class="confidence-row">
+        <div class="confidence-label">${r.category}</div>
+        <div class="confidence-bar-track">
+          <div class="confidence-bar-fill" style="width:${(r.confidence * 100).toFixed(1)}%"></div>
+        </div>
+        <div class="confidence-pct">${(r.confidence * 100).toFixed(1)}%</div>
+      </div>
+    `).join('');
+  }
+
+  // ===== SHARE =====
+  async function shareModel() {
+    if (!model) return;
+    try {
+      const saveData = await new Promise((resolve, reject) => {
+        model.save(tf.io.withSaveHandler(async (artifacts) => {
+          resolve({
             topology: artifacts.modelTopology,
             weightSpecs: artifacts.weightSpecs,
             weightData: Array.from(new Uint8Array(artifacts.weightData)),
-            vocab: charToIdx,
-            seqLength,
-            preset: activePreset,
-            lossHistory
-          };
-
-          const resp = await fetch('/api/models/save', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(modelData)
+            vocab,
+            categories,
+            examples,
+            preset: currentPreset
           });
-
-          if (!resp.ok) throw new Error('Save failed');
-          const result = await resp.json();
-
-          const shareLink = document.getElementById('share-link');
-          if (shareLink) {
-            const url = `${window.location.origin}/model.html?id=${result.id}`;
-            shareLink.innerHTML = `Share link: <a href="${url}" target="_blank">${url}</a>`;
-            shareLink.style.display = 'block';
-          }
-
           return { modelArtifactsInfo: { dateSaved: new Date(), modelTopologyType: 'JSON' } };
         }));
-      } catch (e) {
-        console.error('Share failed:', e);
-        alert('Failed to share model. Try again.');
-      }
+      });
+
+      const resp = await fetch('/api/models/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(saveData)
+      });
+      if (!resp.ok) throw new Error('Save failed');
+      const result = await resp.json();
+      const shareLink = document.getElementById('share-link');
+      const url = `${window.location.origin}/model.html?id=${result.id}`;
+      shareLink.innerHTML = `Share link: <a href="${url}" target="_blank">${url}</a>`;
+      shareLink.style.display = 'block';
+    } catch (e) {
+      console.error('Share failed:', e);
+      alert('Failed to share. Try again.');
+    }
+  }
+
+  // ===== MARKOV COMPLETION =====
+  let markovDebounce = null;
+
+  function initMarkov() {
+    const input = document.getElementById('markov-input');
+    if (!input) return;
+    input.addEventListener('input', () => {
+      clearTimeout(markovDebounce);
+      markovDebounce = setTimeout(fetchCompletion, 500);
     });
   }
 
-  // ===== Download model =====
-  const downloadBtn = document.getElementById('download-btn');
-  if (downloadBtn) {
-    downloadBtn.addEventListener('click', async () => {
-      if (!model) return;
-      await model.save('downloads://minillm-model');
-    });
+  async function fetchCompletion() {
+    const input = document.getElementById('markov-input');
+    const output = document.getElementById('markov-output');
+    const preset = document.getElementById('markov-preset').value;
+    const text = input.value;
+    if (!text.trim()) { output.innerHTML = ''; return; }
+
+    try {
+      const resp = await fetch(`/api/complete?text=${encodeURIComponent(text)}&preset=${preset}&length=100`);
+      if (!resp.ok) { output.innerHTML = '<span style="color:#ef4444;">Rate limited. Wait a moment.</span>'; return; }
+      const data = await resp.json();
+      output.innerHTML = `<span>${escapeHtml(text)}</span><span style="color:var(--accent);font-weight:500;">${escapeHtml(data.text)}</span>`;
+    } catch (e) {
+      output.innerHTML = '';
+    }
   }
 
+  // ===== BOOT =====
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
 })();

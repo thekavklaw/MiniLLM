@@ -170,80 +170,75 @@
   <section class="story-section train-section" id="train">
     <div class="story-content">
       <h2 class="reveal">Train your own.</h2>
-      <p class="reveal delay-1" style="max-width:600px; margin:0 auto 2rem;">Pick some text. Train a real language model. Watch it learn to write like your data — all in your browser.</p>
+      <p class="reveal delay-1" style="max-width:600px; margin:0 auto 2rem;">Build a text classifier in your browser. Pick categories, add examples, train instantly, and test in real time.</p>
       
       <div class="trainer-container reveal delay-2" id="trainer">
-        <!-- Step 1: Choose data -->
+        <!-- Step 1: Choose preset -->
         <div class="train-step" id="train-step-1">
-          <h3>① Choose training data</h3>
+          <h3>① Pick a task</h3>
           <div class="preset-grid">
-            <button class="preset-btn active" data-preset="shakespeare">📜 Shakespeare</button>
-            <button class="preset-btn" data-preset="recipes">🍳 Recipes</button>
-            <button class="preset-btn" data-preset="python">🐍 Python Code</button>
-            <button class="preset-btn" data-preset="custom">✏️ Your Own Text</button>
-          </div>
-          <textarea id="custom-text" class="custom-text-area" placeholder="Paste at least 1000 characters of text here..." style="display:none;"></textarea>
-          <div class="data-preview" id="data-preview">
-            <div class="preview-label">Preview:</div>
-            <div class="preview-text" id="preview-text"></div>
+            <button class="preset-btn active" data-preset="sentiment">🎭 Sentiment</button>
+            <button class="preset-btn" data-preset="spam">📧 Spam Filter</button>
+            <button class="preset-btn" data-preset="catdog">🐱 Cat vs Dog</button>
+            <button class="preset-btn" data-preset="custom">✏️ Custom</button>
           </div>
         </div>
 
-        <!-- Step 2: Configure -->
+        <!-- Step 2: Examples -->
         <div class="train-step" id="train-step-2">
-          <h3>② Configure</h3>
-          <div class="config-grid">
-            <div class="config-item">
-              <label>Model Size</label>
-              <select id="model-size">
-                <option value="tiny">Tiny (~30s)</option>
-                <option value="small" selected>Small (~60s)</option>
-                <option value="medium">Medium (~2min)</option>
-              </select>
-            </div>
-            <div class="config-item">
-              <label>Temperature</label>
-              <input type="range" id="temperature" min="0.1" max="2" step="0.1" value="0.8">
-              <span id="temp-val">0.8</span>
+          <h3>② Training examples</h3>
+          <div class="category-columns" id="category-columns"></div>
+          <div class="add-example-row" id="add-example-row">
+            <select id="add-example-cat" class="add-cat-select"></select>
+            <input type="text" id="add-example-input" class="add-example-input" placeholder="Type an example and press Enter...">
+            <button id="add-example-btn" class="add-example-btn">+ Add</button>
+          </div>
+          <div id="custom-categories-setup" style="display:none;">
+            <div class="custom-cat-row">
+              <input type="text" id="custom-cat-input" class="add-example-input" placeholder="Category name (e.g. Positive)">
+              <button id="add-cat-btn" class="add-example-btn">+ Add Category</button>
             </div>
           </div>
         </div>
 
-        <!-- Step 3: Train! -->
+        <!-- Step 3: Train -->
         <div class="train-step" id="train-step-3">
-          <button class="train-btn" id="train-btn">🚀 Start Training</button>
-          <div class="training-dashboard" id="training-dashboard" style="display:none;">
-            <div class="dash-row">
-              <div class="dash-card">
-                <div class="dash-label">Loss</div>
-                <div class="dash-value" id="dash-loss">—</div>
-                <canvas id="loss-chart" width="280" height="100"></canvas>
-              </div>
-              <div class="dash-card">
-                <div class="dash-label">Epoch</div>
-                <div class="dash-value" id="dash-epoch">0 / 0</div>
-                <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
-              </div>
-            </div>
-            <div class="sample-output">
-              <div class="sample-label">Model is writing:</div>
-              <div class="sample-text" id="sample-text">Waiting for first epoch...</div>
-            </div>
-          </div>
+          <button class="train-btn" id="train-btn">⚡ Train (instant)</button>
+          <div class="train-stats" id="train-stats" style="display:none;"></div>
         </div>
 
-        <!-- Step 4: Play -->
+        <!-- Step 4: Test -->
         <div class="train-step" id="train-step-4" style="display:none;">
-          <h3>Your model is ready! 🎉</h3>
-          <div class="generate-area">
-            <input type="text" id="gen-prompt" class="gen-input" placeholder="Type a prompt and press Enter...">
-            <div class="gen-output" id="gen-output"></div>
-          </div>
-          <div class="share-row">
-            <button class="share-btn" id="share-btn">📤 Share Model</button>
-            <button class="download-btn" id="download-btn">💾 Download</button>
+          <h3>④ Test your classifier</h3>
+          <input type="text" id="test-input" class="gen-input" placeholder="Type a sentence to classify...">
+          <div class="confidence-bars" id="confidence-bars"></div>
+          <div class="share-row" style="margin-top:1rem;">
+            <button class="share-btn" id="share-btn">📤 Share</button>
           </div>
           <div class="share-link" id="share-link" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== MARKOV COMPLETION BONUS ===== -->
+  <section class="story-section train-section" id="markov">
+    <div class="story-content">
+      <h2 class="reveal">Bonus: AI completes your sentence.</h2>
+      <p class="reveal delay-1" style="max-width:650px; margin:0 auto 1rem; font-size:0.95rem; color:var(--text-dim);">This uses a simple Markov chain — a statistical model that predicts the next character based on patterns in the training text.</p>
+      <div class="trainer-container reveal delay-2">
+        <div class="train-step">
+          <div class="markov-controls">
+            <select id="markov-preset" class="add-cat-select" style="min-width:160px;">
+              <option value="shakespeare">📜 Shakespeare</option>
+              <option value="recipes">🍳 Recipes</option>
+              <option value="python">🐍 Python</option>
+            </select>
+          </div>
+          <div class="markov-input-wrap" style="margin-top:1rem;">
+            <input type="text" id="markov-input" class="gen-input" placeholder="Start typing... (e.g. 'To be or')">
+          </div>
+          <div class="markov-output" id="markov-output" style="margin-top:1rem; min-height:60px; padding:1rem; background:rgba(255,255,255,0.4); border-radius:var(--radius-sm); font-size:0.95rem; line-height:1.7; white-space:pre-wrap;"></div>
         </div>
       </div>
     </div>
