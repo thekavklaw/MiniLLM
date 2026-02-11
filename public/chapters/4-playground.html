@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chapter 4: The Playground — MiniLLM</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body data-chapter="4">
+  <div class="chapter-content">
+    <div class="chapter-header fade-in-up">
+      <div class="chapter-number">Chapter 4</div>
+      <h1>The Playground</h1>
+      <p>Build any network you want. Choose a dataset, tweak the architecture, and watch it learn in real time.</p>
+    </div>
+
+    <div class="interactive-area fade-in-up delay-1">
+      <div class="playground-layout">
+        <!-- Left sidebar: controls -->
+        <div class="playground-sidebar">
+          <div class="card" style="padding:16px;">
+            <h3 style="font-size:0.9rem;margin-bottom:12px;">Dataset</h3>
+            <select id="pg-dataset" style="width:100%;">
+              <option value="circle">Circle</option>
+              <option value="xor">XOR</option>
+              <option value="spiral" selected>Spiral</option>
+              <option value="gaussian">Gaussian</option>
+              <option value="checkerboard">Checkerboard</option>
+            </select>
+            <button class="btn btn-sm btn-secondary" id="pg-regen" style="width:100%;margin-top:8px;">Regenerate</button>
+          </div>
+
+          <div class="card" style="padding:16px;">
+            <h3 style="font-size:0.9rem;margin-bottom:12px;">Architecture</h3>
+            <div id="pg-layers-config">
+              <!-- Dynamic layer controls -->
+            </div>
+            <div style="display:flex;gap:6px;margin-top:8px;">
+              <button class="btn btn-sm btn-secondary" id="pg-add-layer" style="flex:1;">+ Layer</button>
+              <button class="btn btn-sm btn-secondary" id="pg-remove-layer" style="flex:1;">- Layer</button>
+            </div>
+          </div>
+
+          <div class="card" style="padding:16px;">
+            <h3 style="font-size:0.9rem;margin-bottom:12px;">Settings</h3>
+            <div class="slider-group">
+              <label style="min-width:auto;font-size:0.75rem;">LR</label>
+              <input type="range" id="pg-lr" min="0.001" max="1" step="0.001" value="0.05">
+              <span class="slider-value" id="pg-lr-val" style="min-width:40px;">0.05</span>
+            </div>
+            <div class="control-group" style="margin-top:8px;">
+              <label style="font-size:0.75rem;">Activation:</label>
+              <select id="pg-activation" style="font-size:0.75rem;padding:4px 8px;">
+                <option value="relu" selected>ReLU</option>
+                <option value="sigmoid">Sigmoid</option>
+                <option value="tanh">Tanh</option>
+              </select>
+            </div>
+            <div class="slider-group" style="margin-top:8px;">
+              <label style="min-width:auto;font-size:0.75rem;">L2</label>
+              <input type="range" id="pg-l2" min="0" max="0.01" step="0.0001" value="0">
+              <span class="slider-value" id="pg-l2-val" style="min-width:40px;">0</span>
+            </div>
+          </div>
+
+          <div class="controls" style="flex-direction:column;">
+            <button class="btn btn-primary" id="pg-train" style="width:100%;">▶ Train</button>
+            <button class="btn btn-secondary btn-sm" id="pg-reset" style="width:100%;">Reset Network</button>
+          </div>
+
+          <div class="stats" style="flex-direction:column;gap:8px;">
+            <div class="stat"><div class="stat-value" id="pg-epoch">0</div><div class="stat-label">Epoch</div></div>
+            <div class="stat"><div class="stat-value" id="pg-loss">—</div><div class="stat-label">Loss</div></div>
+            <div class="stat"><div class="stat-value" id="pg-params">—</div><div class="stat-label">Parameters</div></div>
+          </div>
+        </div>
+
+        <!-- Main: decision boundary -->
+        <div class="playground-main">
+          <canvas id="pg-canvas" width="500" height="500"></canvas>
+        </div>
+
+        <!-- Right sidebar: network viz + narration -->
+        <div class="playground-sidebar">
+          <div class="card" style="padding:16px;">
+            <h3 style="font-size:0.9rem;margin-bottom:8px;">Network</h3>
+            <canvas id="pg-network" width="260" height="220"></canvas>
+          </div>
+          <div class="card" style="padding:16px;">
+            <h3 style="font-size:0.9rem;margin-bottom:8px;">Loss</h3>
+            <canvas id="pg-loss-chart" width="260" height="130"></canvas>
+          </div>
+          <div class="narration" id="pg-narration" style="font-size:0.8rem;">
+            Choose a dataset, build your network, and hit Train!
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/particles.js"></script>
+  <script src="/js/neural-engine.js"></script>
+  <script src="/js/viz.js"></script>
+  <script src="/js/nav.js"></script>
+  <script>
+    const ps = new ParticleSystem(); ps.start();
+    const $ = id => document.getElementById(id);
+    const { NeuralNetwork, Datasets } = NeuralEngine;
+
+    let hiddenLayers = [4, 4];
+    let pgNet, pgData, pgHistory, pgTraining = false, pgAnimId;
+
+    function renderLayerConfig() {
+      const container = $('pg-layers-config');
+      container.innerHTML = hiddenLayers.map((n, i) => `
+        <div class="slider-group" style="margin:4px 0;">
+          <label style="min-width:auto;font-size:0.7rem;">L${i + 1}</label>
+          <input type="range" min="1" max="12" value="${n}" data-layer="${i}" class="layer-slider" style="flex:1;">
+          <span class="slider-value" style="min-width:20px;font-size:0.8rem;">${n}</span>
+        </div>
+      `).join('');
+
+      container.querySelectorAll('.layer-slider').forEach(s => {
+        s.addEventListener('input', (e) => {
+          const idx = parseInt(e.target.dataset.layer);
+          hiddenLayers[idx] = parseInt(e.target.value);
+          e.target.nextElementSibling.textContent = e.target.value;
+        });
+      });
+    }
+
+    $('pg-add-layer').addEventListener('click', () => {
+      if (hiddenLayers.length < 6) {
+        hiddenLayers.push(4);
+        renderLayerConfig();
+      }
+    });
+
+    $('pg-remove-layer').addEventListener('click', () => {
+      if (hiddenLayers.length > 1) {
+        hiddenLayers.pop();
+        renderLayerConfig();
+      }
+    });
+
+    function initPlayground() {
+      const activation = $('pg-activation').value;
+      const datasetName = $('pg-dataset').value;
+      const topology = [2, ...hiddenLayers, 1];
+      pgNet = new NeuralNetwork(topology, activation, 'sigmoid');
+      pgData = Datasets[datasetName](300);
+      pgHistory = [];
+      pgTraining = false;
+      $('pg-train').textContent = '▶ Train';
+      $('pg-params').textContent = pgNet.paramCount();
+      $('pg-epoch').textContent = '0';
+      $('pg-loss').textContent = '—';
+      drawPlayground();
+    }
+
+    function drawPlayground() {
+      const canvas = $('pg-canvas'), ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const grid = pgNet.classifyGrid(60, -6, 6, -6, 6);
+      Viz.drawDecisionBoundary(ctx, grid, 60, canvas.width, canvas.height);
+      Viz.drawDataPoints(ctx, pgData, canvas.width, canvas.height);
+
+      // Network viz
+      const nc = $('pg-network'), nctx = nc.getContext('2d');
+      Viz.drawNetwork(nctx, pgNet, nc.width, nc.height, [0, 0]);
+
+      // Loss chart
+      const lc = $('pg-loss-chart'), lctx = lc.getContext('2d');
+      Viz.drawLossChart(lctx, pgHistory, lc.width, lc.height);
+
+      $('pg-epoch').textContent = pgNet.epoch;
+      $('pg-loss').textContent = pgNet.loss === Infinity ? '—' : pgNet.loss.toFixed(5);
+    }
+
+    function trainStep() {
+      if (!pgTraining) return;
+      const lr = parseFloat($('pg-lr').value);
+      const l2 = parseFloat($('pg-l2').value);
+
+      for (let i = 0; i < 5; i++) {
+        const loss = pgNet.trainBatch(pgData, lr, 'mse', l2);
+        pgHistory.push(loss);
+      }
+
+      drawPlayground();
+      updateNarration();
+
+      if (pgNet.epoch < 10000) {
+        pgAnimId = requestAnimationFrame(trainStep);
+      } else {
+        pgTraining = false;
+        $('pg-train').textContent = '▶ Train';
+      }
+    }
+
+    function updateNarration() {
+      const epoch = pgNet.epoch;
+      const loss = pgNet.loss;
+      let msg = '';
+
+      if (epoch < 50) {
+        msg = `<strong>Starting up!</strong> The network is randomly initialized. Loss is ${loss.toFixed(4)} — it's just guessing.`;
+      } else if (loss > 0.2) {
+        msg = `<strong>Learning...</strong> Loss is ${loss.toFixed(4)}. The decision boundary is starting to take shape, but there's a lot to learn.`;
+      } else if (loss > 0.05) {
+        msg = `<strong>Getting there!</strong> Loss is down to ${loss.toFixed(4)}. The boundary is clearly separating the two classes.`;
+      } else if (loss > 0.01) {
+        msg = `<strong>Almost!</strong> Loss is ${loss.toFixed(5)}. Fine-tuning the boundary for the tricky points.`;
+      } else {
+        msg = `<strong>🎉 Excellent!</strong> Loss is ${loss.toFixed(5)}. The network has learned this dataset well!`;
+        Nav.setCompleted(4);
+      }
+
+      $('pg-narration').innerHTML = msg;
+    }
+
+    $('pg-train').addEventListener('click', () => {
+      if (!pgNet) initPlayground();
+      pgTraining = !pgTraining;
+      $('pg-train').textContent = pgTraining ? '⏸ Pause' : '▶ Train';
+      if (pgTraining) trainStep();
+    });
+
+    $('pg-reset').addEventListener('click', () => {
+      pgTraining = false;
+      if (pgAnimId) cancelAnimationFrame(pgAnimId);
+      initPlayground();
+    });
+
+    $('pg-regen').addEventListener('click', () => {
+      pgData = Datasets[$('pg-dataset').value](300);
+      drawPlayground();
+    });
+
+    $('pg-dataset').addEventListener('change', () => {
+      pgTraining = false;
+      if (pgAnimId) cancelAnimationFrame(pgAnimId);
+      initPlayground();
+    });
+
+    $('pg-lr').addEventListener('input', () => {
+      $('pg-lr-val').textContent = parseFloat($('pg-lr').value).toFixed(3);
+    });
+
+    $('pg-l2').addEventListener('input', () => {
+      $('pg-l2-val').textContent = parseFloat($('pg-l2').value).toFixed(4);
+    });
+
+    renderLayerConfig();
+    initPlayground();
+  </script>
+</body>
+</html>

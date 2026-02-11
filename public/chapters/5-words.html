@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chapter 5: How Computers Read Words — MiniLLM</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body data-chapter="5">
+  <div class="chapter-content">
+    <div class="chapter-header fade-in-up">
+      <div class="chapter-number">Chapter 5</div>
+      <h1>How Computers Read Words</h1>
+      <p>ChatGPT doesn't see words — it sees numbers. Let's explore how text becomes vectors.</p>
+    </div>
+
+    <div class="section fade-in-up delay-1">
+      <h2>✂️ Tokenization: Chopping Text Into Pieces</h2>
+      <p>Before a language model can process text, it splits it into <strong>tokens</strong> — usually word pieces. Type something below to see it tokenized!</p>
+      <div class="interactive-area">
+        <input type="text" id="token-input" value="The quick brown fox jumps over the lazy dog" style="width:100%;padding:12px 16px;border:2px solid var(--card-border);border-radius:var(--radius-sm);font-family:inherit;font-size:1rem;outline:none;" placeholder="Type a sentence...">
+        <div id="token-output" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:16px;min-height:40px;"></div>
+        <div class="narration" id="token-narration" style="margin-top:12px;"></div>
+      </div>
+    </div>
+
+    <div class="section fade-in-up delay-2">
+      <h2>📍 Word Embeddings: Words as Points in Space</h2>
+      <p>Each token gets mapped to a vector — a list of numbers that captures its meaning. Words with similar meanings end up close together. Drag the words to explore!</p>
+      <div class="interactive-area">
+        <canvas id="embed-canvas" width="700" height="450"></canvas>
+        <div class="narration" style="margin-top:12px;">Each dot is a word. Words with similar meanings cluster together. In real models, these vectors have hundreds of dimensions — here we show just 2D.</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/particles.js"></script>
+  <script src="/js/viz.js"></script>
+  <script src="/js/nav.js"></script>
+  <script>
+    const ps = new ParticleSystem(); ps.start();
+    const $ = id => document.getElementById(id);
+
+    // Simple whitespace + subword tokenizer simulation
+    function tokenize(text) {
+      const tokens = [];
+      const words = text.split(/(\s+)/);
+      const colors = ['#8b5cf6', '#3b82f6', '#f97316', '#22c55e', '#ec4899', '#ef4444', '#06b6d4', '#eab308'];
+      let ci = 0;
+      for (const w of words) {
+        if (/^\s+$/.test(w)) continue;
+        // Simulate subword: split long words
+        if (w.length > 6) {
+          const mid = Math.ceil(w.length * 0.6);
+          tokens.push({ text: w.slice(0, mid), color: colors[ci % colors.length] });
+          tokens.push({ text: '##' + w.slice(mid), color: colors[ci % colors.length] });
+        } else {
+          tokens.push({ text: w.toLowerCase(), color: colors[ci % colors.length] });
+        }
+        ci++;
+      }
+      return tokens;
+    }
+
+    function renderTokens() {
+      const text = $('token-input').value;
+      const tokens = tokenize(text);
+      const out = $('token-output');
+      out.innerHTML = tokens.map(t =>
+        `<span style="display:inline-block;padding:6px 12px;border-radius:8px;background:${t.color}22;border:2px solid ${t.color};color:${t.color};font-weight:600;font-size:0.85rem;">${t.text}</span>`
+      ).join('');
+      $('token-narration').innerHTML = `<strong>${tokens.length} tokens</strong> from ${text.split(/\s+/).filter(Boolean).length} words. Real tokenizers like BPE split rare words into subword pieces (shown with ##).`;
+    }
+
+    $('token-input').addEventListener('input', renderTokens);
+    renderTokens();
+
+    // Embedding visualization
+    const embedCanvas = $('embed-canvas');
+    const ectx = embedCanvas.getContext('2d');
+
+    // Simulated 2D embeddings for common words (pre-computed for demo)
+    const words = [
+      { word: 'king', x: 0.7, y: 0.8, cat: 'royalty' },
+      { word: 'queen', x: 0.75, y: 0.85, cat: 'royalty' },
+      { word: 'prince', x: 0.65, y: 0.78, cat: 'royalty' },
+      { word: 'princess', x: 0.72, y: 0.82, cat: 'royalty' },
+      { word: 'man', x: 0.5, y: 0.6, cat: 'people' },
+      { word: 'woman', x: 0.55, y: 0.65, cat: 'people' },
+      { word: 'boy', x: 0.45, y: 0.55, cat: 'people' },
+      { word: 'girl', x: 0.52, y: 0.58, cat: 'people' },
+      { word: 'cat', x: 0.2, y: 0.3, cat: 'animals' },
+      { word: 'dog', x: 0.25, y: 0.28, cat: 'animals' },
+      { word: 'fish', x: 0.15, y: 0.35, cat: 'animals' },
+      { word: 'bird', x: 0.18, y: 0.25, cat: 'animals' },
+      { word: 'happy', x: 0.8, y: 0.2, cat: 'emotions' },
+      { word: 'sad', x: 0.3, y: 0.8, cat: 'emotions' },
+      { word: 'angry', x: 0.35, y: 0.75, cat: 'emotions' },
+      { word: 'joyful', x: 0.82, y: 0.22, cat: 'emotions' },
+      { word: 'car', x: 0.6, y: 0.15, cat: 'transport' },
+      { word: 'bus', x: 0.58, y: 0.12, cat: 'transport' },
+      { word: 'train', x: 0.55, y: 0.18, cat: 'transport' },
+      { word: 'plane', x: 0.62, y: 0.1, cat: 'transport' },
+    ];
+
+    const catColors = {
+      royalty: '#8b5cf6',
+      people: '#3b82f6',
+      animals: '#22c55e',
+      emotions: '#f97316',
+      transport: '#ec4899'
+    };
+
+    let dragging = null;
+
+    function drawEmbeddings() {
+      const w = embedCanvas.width, h = embedCanvas.height;
+      ectx.clearRect(0, 0, w, h);
+
+      // Draw category legend
+      let ly = 20;
+      ectx.font = '11px Inter, sans-serif';
+      for (const [cat, color] of Object.entries(catColors)) {
+        ectx.fillStyle = color;
+        ectx.beginPath();
+        ectx.arc(w - 80, ly, 5, 0, Math.PI * 2);
+        ectx.fill();
+        ectx.fillStyle = '#64748b';
+        ectx.textAlign = 'left';
+        ectx.fillText(cat, w - 70, ly + 4);
+        ly += 20;
+      }
+
+      // Draw words
+      for (const wd of words) {
+        const px = wd.x * (w - 100) + 50;
+        const py = wd.y * (h - 80) + 40;
+        const color = catColors[wd.cat];
+
+        // Glow
+        ectx.beginPath();
+        ectx.arc(px, py, 20, 0, Math.PI * 2);
+        ectx.fillStyle = Viz.hexToRgba(color, 0.15);
+        ectx.fill();
+
+        // Dot
+        ectx.beginPath();
+        ectx.arc(px, py, 8, 0, Math.PI * 2);
+        ectx.fillStyle = color;
+        ectx.fill();
+        ectx.strokeStyle = '#fff';
+        ectx.lineWidth = 2;
+        ectx.stroke();
+
+        // Label
+        ectx.fillStyle = '#1e293b';
+        ectx.font = '12px Inter, sans-serif';
+        ectx.textAlign = 'center';
+        ectx.fillText(wd.word, px, py - 14);
+      }
+    }
+
+    embedCanvas.addEventListener('mousedown', (e) => {
+      const rect = embedCanvas.getBoundingClientRect();
+      const mx = (e.clientX - rect.left) * (embedCanvas.width / rect.width);
+      const my = (e.clientY - rect.top) * (embedCanvas.height / rect.height);
+
+      for (const wd of words) {
+        const px = wd.x * (embedCanvas.width - 100) + 50;
+        const py = wd.y * (embedCanvas.height - 80) + 40;
+        if (Math.hypot(mx - px, my - py) < 15) {
+          dragging = wd;
+          break;
+        }
+      }
+    });
+
+    embedCanvas.addEventListener('mousemove', (e) => {
+      if (!dragging) return;
+      const rect = embedCanvas.getBoundingClientRect();
+      const mx = (e.clientX - rect.left) * (embedCanvas.width / rect.width);
+      const my = (e.clientY - rect.top) * (embedCanvas.height / rect.height);
+      dragging.x = Math.max(0.05, Math.min(0.95, (mx - 50) / (embedCanvas.width - 100)));
+      dragging.y = Math.max(0.05, Math.min(0.95, (my - 40) / (embedCanvas.height - 80)));
+      drawEmbeddings();
+    });
+
+    embedCanvas.addEventListener('mouseup', () => { dragging = null; });
+    embedCanvas.addEventListener('mouseleave', () => { dragging = null; });
+
+    drawEmbeddings();
+    Nav.setCompleted(5);
+  </script>
+</body>
+</html>

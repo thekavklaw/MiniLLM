@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chapter 7: The Transformer — MiniLLM</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body data-chapter="7">
+  <div class="chapter-content">
+    <div class="chapter-header fade-in-up">
+      <div class="chapter-number">Chapter 7</div>
+      <h1>The Transformer</h1>
+      <p>Putting it all together: embeddings → attention → feed-forward → prediction.</p>
+    </div>
+
+    <div class="section fade-in-up delay-1">
+      <h2>⚡ Step Through a Transformer</h2>
+      <p>Watch data flow through each component of a transformer. Click "Next Step" to advance.</p>
+
+      <div class="interactive-area">
+        <canvas id="transformer-canvas" width="800" height="500"></canvas>
+        <div class="controls">
+          <button class="btn btn-primary btn-sm" id="tf-next">Next Step →</button>
+          <button class="btn btn-secondary btn-sm" id="tf-reset">Reset</button>
+          <span id="tf-step-label" style="font-size:0.9rem;color:var(--text-light);margin-left:12px;">Step 0 / 5</span>
+        </div>
+        <div class="narration" id="tf-narration">Click "Next Step" to see how a transformer processes the sentence "The cat sat on the ___"</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/particles.js"></script>
+  <script src="/js/viz.js"></script>
+  <script src="/js/nav.js"></script>
+  <script>
+    const ps = new ParticleSystem(); ps.start();
+    const $ = id => document.getElementById(id);
+
+    const canvas = $('transformer-canvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+
+    const tokens = ['The', 'cat', 'sat', 'on', 'the', '___'];
+
+    const steps = [
+      { name: 'Input', desc: 'The sentence is split into tokens. Each token is a word or word-piece.' },
+      { name: 'Embedding', desc: 'Each token is converted to a vector — a list of numbers that represents its meaning and position.' },
+      { name: 'Self-Attention', desc: 'Each token looks at all other tokens to understand context. "sat" pays attention to "cat" (who sat?) and "on" (sat where?).' },
+      { name: 'Feed-Forward', desc: 'Each token\'s representation is processed through a small neural network, adding complexity and nuance.' },
+      { name: 'Output Layer', desc: 'The final hidden state of the "___" token is projected to a vocabulary of words to predict the next word.' },
+      { name: 'Prediction', desc: 'The model predicts "mat" with 42% probability! Other guesses: "floor" (18%), "table" (12%), "ground" (9%).' }
+    ];
+
+    let currentStep = 0;
+
+    const boxColors = ['#e2e8f0', '#ddd6fe', '#bfdbfe', '#fed7aa', '#fecaca', '#bbf7d0'];
+    const activeColor = '#8b5cf6';
+
+    function drawTransformer() {
+      ctx.clearRect(0, 0, W, H);
+
+      const layerH = 60;
+      const startY = 40;
+      const tokenW = 80;
+      const gap = 12;
+      const totalW = tokens.length * (tokenW + gap) - gap;
+      const startX = (W - totalW) / 2;
+
+      // Draw each layer
+      for (let s = 0; s <= Math.min(currentStep, 5); s++) {
+        const y = startY + s * (layerH + 20);
+        const isActive = s === currentStep;
+
+        // Layer background
+        ctx.fillStyle = isActive ? Viz.hexToRgba(activeColor, 0.1) : 'rgba(0,0,0,0.02)';
+        ctx.roundRect?.(startX - 20, y - 10, totalW + 40, layerH + 10, 12) || ctx.rect(startX - 20, y - 10, totalW + 40, layerH + 10);
+        ctx.fill();
+
+        if (isActive) {
+          ctx.strokeStyle = activeColor;
+          ctx.lineWidth = 2;
+          ctx.roundRect?.(startX - 20, y - 10, totalW + 40, layerH + 10, 12) || ctx.rect(startX - 20, y - 10, totalW + 40, layerH + 10);
+          ctx.stroke();
+        }
+
+        // Layer label
+        ctx.fillStyle = isActive ? activeColor : '#94a3b8';
+        ctx.font = `${isActive ? '600' : '400'} 11px Inter, sans-serif`;
+        ctx.textAlign = 'right';
+        ctx.fillText(steps[s].name, startX - 28, y + layerH / 2 + 4);
+
+        // Token boxes
+        for (let t = 0; t < tokens.length; t++) {
+          const x = startX + t * (tokenW + gap);
+
+          ctx.fillStyle = isActive ? Viz.hexToRgba(activeColor, 0.15) : boxColors[s];
+          ctx.beginPath();
+          ctx.roundRect?.(x, y, tokenW, layerH - 10, 8) || ctx.rect(x, y, tokenW, layerH - 10);
+          ctx.fill();
+
+          if (isActive) {
+            ctx.strokeStyle = activeColor;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+          }
+
+          // Token text
+          ctx.fillStyle = '#1e293b';
+          ctx.font = '13px Inter, sans-serif';
+          ctx.textAlign = 'center';
+
+          if (s === 0) {
+            ctx.fillText(tokens[t], x + tokenW / 2, y + 30);
+          } else if (s === 5 && t === tokens.length - 1) {
+            ctx.fillStyle = '#22c55e';
+            ctx.font = '600 14px Inter, sans-serif';
+            ctx.fillText('mat', x + tokenW / 2, y + 22);
+            ctx.fillStyle = '#64748b';
+            ctx.font = '10px Inter, sans-serif';
+            ctx.fillText('42%', x + tokenW / 2, y + 38);
+          } else if (s >= 1) {
+            // Show abstract vector representation
+            const barW = 6, barGap = 2;
+            const numBars = 8;
+            const barsStartX = x + (tokenW - numBars * (barW + barGap)) / 2;
+            for (let b = 0; b < numBars; b++) {
+              const barH = Math.random() * 25 + 5;
+              const bx = barsStartX + b * (barW + barGap);
+              ctx.fillStyle = Viz.hexToRgba(activeColor, 0.3 + Math.random() * 0.4);
+              ctx.fillRect(bx, y + 35 - barH, barW, barH);
+            }
+          }
+        }
+
+        // Draw arrows between layers
+        if (s > 0) {
+          const prevY = startY + (s - 1) * (layerH + 20) + layerH - 10;
+          const curY = y;
+          for (let t = 0; t < tokens.length; t++) {
+            const x = startX + t * (tokenW + gap) + tokenW / 2;
+            ctx.beginPath();
+            ctx.moveTo(x, prevY);
+            ctx.lineTo(x, curY);
+            ctx.strokeStyle = s <= currentStep ? Viz.hexToRgba(activeColor, 0.3) : 'rgba(0,0,0,0.05)';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+          }
+
+          // Attention cross-connections
+          if (s === 2 && currentStep >= 2) {
+            ctx.save();
+            ctx.globalAlpha = 0.12;
+            for (let t1 = 0; t1 < tokens.length; t1++) {
+              for (let t2 = 0; t2 < tokens.length; t2++) {
+                if (t1 === t2) continue;
+                const x1 = startX + t1 * (tokenW + gap) + tokenW / 2;
+                const x2 = startX + t2 * (tokenW + gap) + tokenW / 2;
+                ctx.beginPath();
+                ctx.moveTo(x1, y + 5);
+                ctx.quadraticCurveTo((x1 + x2) / 2, y - 15, x2, y + 5);
+                ctx.strokeStyle = activeColor;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+              }
+            }
+            ctx.restore();
+          }
+        }
+      }
+    }
+
+    $('tf-next').addEventListener('click', () => {
+      if (currentStep < 5) {
+        currentStep++;
+        drawTransformer();
+        $('tf-step-label').textContent = `Step ${currentStep} / 5`;
+        $('tf-narration').innerHTML = `<strong>${steps[currentStep].name}:</strong> ${steps[currentStep].desc}`;
+        if (currentStep === 5) Nav.setCompleted(7);
+      }
+    });
+
+    $('tf-reset').addEventListener('click', () => {
+      currentStep = 0;
+      drawTransformer();
+      $('tf-step-label').textContent = 'Step 0 / 5';
+      $('tf-narration').textContent = steps[0].desc;
+    });
+
+    drawTransformer();
+  </script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MiniLLM — Learn How AI Thinks</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body data-page="home">
+
+  <div class="hero">
+    <h1 class="fade-in-up">Learn How AI Thinks</h1>
+    <p class="fade-in-up delay-1">An interactive journey from "What is a neuron?" to "How does ChatGPT work?" — no math degree required.</p>
+    <div class="fade-in-up delay-2">
+      <a href="/chapters/1-neuron.html" class="btn btn-primary" style="font-size:1.1rem;padding:16px 36px;">Start Learning →</a>
+    </div>
+    <div class="fade-in-up delay-3" style="margin-top:16px;">
+      <span style="font-size:0.85rem;color:var(--text-lighter);">8 interactive chapters · Build real neural networks · Free & open source</span>
+    </div>
+  </div>
+
+  <div class="chapters-grid" id="chapters">
+    <!-- Filled by JS -->
+  </div>
+
+  <script src="/js/particles.js"></script>
+  <script src="/js/nav.js"></script>
+  <script>
+    // Init particles
+    const ps = new ParticleSystem();
+    ps.start();
+
+    // Render chapter cards
+    const grid = document.getElementById('chapters');
+    const descriptions = [
+      'Meet the building block of AI — a single neuron. Drag sliders, watch it compute.',
+      'Watch a neuron learn from its mistakes with gradient descent, visualized.',
+      'Stack neurons into layers and watch them solve problems a single neuron can\'t.',
+      'Build any network you want. Choose datasets, tune parameters, watch it train.',
+      'See how computers turn words into numbers that capture meaning.',
+      'Discover the breakthrough idea that makes transformers work: attention.',
+      'Walk through an entire transformer processing text, step by step.',
+      'From our tiny network to GPT-4: see what scale really means.'
+    ];
+
+    Nav.chapters.forEach((ch, i) => {
+      const completed = Nav.isCompleted(ch.id);
+      const card = document.createElement('a');
+      card.href = ch.path;
+      card.className = 'chapter-card fade-in-up';
+      card.style.animationDelay = `${0.1 + i * 0.08}s`;
+      card.style.opacity = '0';
+      card.innerHTML = `
+        <div class="chapter-card-icon">${ch.icon}</div>
+        <div class="chapter-card-num">Chapter ${ch.id}</div>
+        <h3>${ch.title}</h3>
+        <p>${descriptions[i]}</p>
+        ${completed ? '<div class="card-status">✓ Completed</div>' : ''}
+      `;
+      grid.appendChild(card);
+    });
+  </script>
+</body>
+</html>

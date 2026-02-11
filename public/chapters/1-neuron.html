@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chapter 1: What IS a Neural Network? — MiniLLM</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body data-chapter="1">
+  <div class="chapter-content">
+    <div class="chapter-header fade-in-up">
+      <div class="chapter-number">Chapter 1</div>
+      <h1>What IS a Neural Network?</h1>
+      <p>You've used ChatGPT. Let's peek inside and meet the building block of all AI: the neuron.</p>
+    </div>
+
+    <div class="section fade-in-up delay-1">
+      <h2>🧠 A Neuron is a Decision-Maker</h2>
+      <p>Think of a neuron as a tiny judge. It takes some numbers in, multiplies each by how much it "cares" about that input (the <span class="tooltip" data-tip="A weight controls how much influence an input has">weight</span>), adds everything up with a personal <span class="tooltip" data-tip="A bias shifts the neuron's threshold — like raising or lowering the bar">bias</span>, and then decides how excited to get.</p>
+      <p>The formula: <strong>output = activation(weight × input + bias)</strong></p>
+    </div>
+
+    <div class="section fade-in-up delay-2">
+      <h2>🎛️ Interactive: Your First Neuron</h2>
+      <p>Drag the sliders to change the input, weight, and bias. Watch the neuron compute in real time.</p>
+
+      <div class="interactive-area">
+        <div class="grid-2">
+          <div>
+            <div class="slider-group">
+              <label>Input</label>
+              <input type="range" id="input1" min="-5" max="10" step="0.1" value="3">
+              <span class="slider-value" id="input1-val">3.0</span>
+            </div>
+            <div class="slider-group">
+              <label>Weight</label>
+              <input type="range" id="weight1" min="-3" max="3" step="0.1" value="1">
+              <span class="slider-value" id="weight1-val">1.0</span>
+            </div>
+            <div class="slider-group">
+              <label>Bias</label>
+              <input type="range" id="bias1" min="-5" max="5" step="0.1" value="0">
+              <span class="slider-value" id="bias1-val">0.0</span>
+            </div>
+            <div class="stats" style="margin-top:24px;">
+              <div class="stat">
+                <div class="stat-value" id="weighted-sum">3.0</div>
+                <div class="stat-label">Weighted Sum</div>
+              </div>
+              <div class="stat">
+                <div class="stat-value" id="neuron-output">0.95</div>
+                <div class="stat-label">Output (Sigmoid)</div>
+              </div>
+            </div>
+            <div class="narration" id="narration1">
+              The neuron received <strong>3.0</strong>, multiplied by weight <strong>1.0</strong>, added bias <strong>0.0</strong> to get <strong>3.0</strong>. After sigmoid, it outputs <strong>0.95</strong> — very excited!
+            </div>
+          </div>
+          <div>
+            <canvas id="neuron-canvas" width="400" height="350"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section fade-in-up delay-3">
+      <h2>🎯 Activity: Build a "Greater Than 5" Detector</h2>
+      <p>Can you adjust the weight and bias so the neuron outputs <strong>close to 1</strong> when the input is > 5, and <strong>close to 0</strong> when it's ≤ 5? Hint: you need a steep weight and a bias around -5.</p>
+
+      <div class="interactive-area">
+        <div id="activity-status" class="narration">Adjust the sliders above. When your neuron correctly classifies 0–10, you'll see a ✅ here!</div>
+        <div style="margin-top:12px;">
+          <button class="btn btn-primary btn-sm" id="test-btn">Test My Neuron</button>
+          <button class="btn btn-secondary btn-sm" id="hint-btn">Show Hint</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/particles.js"></script>
+  <script src="/js/neural-engine.js"></script>
+  <script src="/js/viz.js"></script>
+  <script src="/js/nav.js"></script>
+  <script>
+    const ps = new ParticleSystem(); ps.start();
+
+    const $ = id => document.getElementById(id);
+    const neuron = new NeuralEngine.SingleNeuron(1, 'sigmoid');
+
+    const canvas = $('neuron-canvas');
+    const ctx = canvas.getContext('2d');
+
+    function update() {
+      const input = parseFloat($('input1').value);
+      const weight = parseFloat($('weight1').value);
+      const bias = parseFloat($('bias1').value);
+
+      $('input1-val').textContent = input.toFixed(1);
+      $('weight1-val').textContent = weight.toFixed(1);
+      $('bias1-val').textContent = bias.toFixed(1);
+
+      neuron.weights[0] = weight;
+      neuron.bias = bias;
+      const output = neuron.forward([input]);
+      const sum = input * weight + bias;
+
+      $('weighted-sum').textContent = sum.toFixed(2);
+      $('neuron-output').textContent = output.toFixed(4);
+
+      // Narration
+      const excitement = output > 0.8 ? 'very excited!' : output > 0.5 ? 'mildly interested.' : output > 0.2 ? 'not very interested.' : 'barely activated.';
+      $('narration1').innerHTML = `The neuron received <strong>${input.toFixed(1)}</strong>, multiplied by weight <strong>${weight.toFixed(1)}</strong>, added bias <strong>${bias.toFixed(1)}</strong> to get <strong>${sum.toFixed(2)}</strong>. After sigmoid, it outputs <strong>${output.toFixed(4)}</strong> — ${excitement}`;
+
+      drawNeuronViz(input, weight, bias, sum, output);
+    }
+
+    function drawNeuronViz(input, weight, bias, sum, output) {
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      // Input node
+      Viz.drawNeuron(ctx, 80, h / 2, 25, Math.abs(input) / 10, Viz.colors.blue);
+      ctx.fillStyle = Viz.colors.text;
+      ctx.font = '13px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(input.toFixed(1), 80, h / 2 + 42);
+      ctx.fillText('Input', 80, h / 2 - 38);
+
+      // Connection
+      Viz.drawConnection(ctx, 105, h / 2, 255, h / 2, weight);
+      ctx.fillStyle = Viz.colors.textLight;
+      ctx.font = '11px Inter, sans-serif';
+      ctx.fillText(`w = ${weight.toFixed(1)}`, 180, h / 2 - 12);
+
+      // Neuron
+      Viz.drawNeuron(ctx, 280, h / 2, 35, output, Viz.colors.purple);
+      ctx.fillStyle = Viz.colors.text;
+      ctx.font = '14px Inter, sans-serif';
+      ctx.fillText(output.toFixed(3), 280, h / 2 + 55);
+      ctx.fillText('Neuron', 280, h / 2 - 50);
+
+      // Bias arrow
+      ctx.fillStyle = Viz.colors.orange;
+      ctx.font = '11px Inter, sans-serif';
+      ctx.fillText(`bias = ${bias.toFixed(1)}`, 280, h / 2 + 72);
+
+      // Output arrow
+      ctx.beginPath();
+      ctx.moveTo(315, h / 2);
+      ctx.lineTo(380, h / 2);
+      ctx.strokeStyle = Viz.hexToRgba(Viz.colors.purple, 0.6);
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(380, h / 2);
+      ctx.lineTo(373, h / 2 - 5);
+      ctx.lineTo(373, h / 2 + 5);
+      ctx.fillStyle = Viz.colors.purple;
+      ctx.fill();
+
+      // Sigmoid curve at bottom
+      ctx.save();
+      const cx = 40, cy = h - 80, cw = w - 80, ch2 = 60;
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + cw, cy); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx, cy - ch2); ctx.lineTo(cx + cw, cy - ch2); ctx.stroke();
+
+      ctx.beginPath();
+      for (let i = 0; i <= cw; i++) {
+        const x_val = (i / cw) * 12 - 6;
+        const sig = 1 / (1 + Math.exp(-x_val));
+        const px = cx + i;
+        const py = cy - sig * ch2;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.strokeStyle = Viz.colors.purple;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Current point on curve
+      const normX = (sum + 6) / 12;
+      const dotX = cx + normX * cw;
+      const dotY = cy - output * ch2;
+      ctx.beginPath();
+      ctx.arc(Math.max(cx, Math.min(cx + cw, dotX)), dotY, 6, 0, Math.PI * 2);
+      ctx.fillStyle = Viz.colors.orange;
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.fillStyle = Viz.colors.textLight;
+      ctx.font = '10px Inter, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('Sigmoid activation', cx, cy + 16);
+      ctx.restore();
+    }
+
+    ['input1', 'weight1', 'bias1'].forEach(id => $(id).addEventListener('input', update));
+    update();
+
+    // Activity
+    $('test-btn').addEventListener('click', () => {
+      const weight = parseFloat($('weight1').value);
+      const bias = parseFloat($('bias1').value);
+      neuron.weights[0] = weight;
+      neuron.bias = bias;
+
+      let correct = 0;
+      const total = 11;
+      const results = [];
+      for (let x = 0; x <= 10; x++) {
+        const out = neuron.forward([x]);
+        const expected = x > 5 ? 1 : 0;
+        const pass = (expected === 1 && out > 0.7) || (expected === 0 && out < 0.3);
+        if (pass) correct++;
+        results.push(`${x}: ${out.toFixed(2)} ${pass ? '✅' : '❌'}`);
+      }
+
+      const status = $('activity-status');
+      if (correct === total) {
+        status.innerHTML = `<strong>🎉 Perfect!</strong> Your neuron correctly detects "greater than 5"!<br>${results.join(' | ')}`;
+        Nav.setCompleted(1);
+      } else {
+        status.innerHTML = `<strong>${correct}/${total} correct.</strong> Keep adjusting!<br>${results.join(' | ')}`;
+      }
+    });
+
+    $('hint-btn').addEventListener('click', () => {
+      $('activity-status').innerHTML = `<strong>💡 Hint:</strong> Try weight ≈ 3.0 and bias ≈ -16.5. A high weight makes the sigmoid steep (sharp cutoff), and the negative bias shifts the threshold to x = 5.`;
+    });
+  </script>
+</body>
+</html>

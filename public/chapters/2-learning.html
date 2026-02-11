@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chapter 2: Neurons That Learn — MiniLLM</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body data-chapter="2">
+  <div class="chapter-content">
+    <div class="chapter-header fade-in-up">
+      <div class="chapter-number">Chapter 2</div>
+      <h1>Neurons That Learn</h1>
+      <p>How does a neuron figure out the right weights? By rolling a ball downhill on the "loss landscape."</p>
+    </div>
+
+    <div class="section fade-in-up delay-1">
+      <h2>📉 Gradient Descent: Rolling Downhill</h2>
+      <p>Imagine the neuron's "wrongness" (loss) as a hilly landscape. Gradient descent is like dropping a ball — it rolls downhill toward the lowest point, which is the best set of weights.</p>
+
+      <div class="interactive-area">
+        <canvas id="loss-canvas" width="600" height="300"></canvas>
+        <div class="controls">
+          <button class="btn btn-primary btn-sm" id="drop-btn">🎱 Drop the Ball</button>
+          <button class="btn btn-secondary btn-sm" id="reset-ball-btn">Reset</button>
+          <div class="control-group">
+            <label>Learning Rate</label>
+            <input type="range" id="ball-lr" min="0.01" max="0.5" step="0.01" value="0.1" style="width:100px;">
+            <span class="slider-value" id="ball-lr-val">0.10</span>
+          </div>
+        </div>
+        <div class="narration" id="ball-narration">Click "Drop the Ball" to watch gradient descent find the minimum!</div>
+      </div>
+    </div>
+
+    <div class="section fade-in-up delay-2">
+      <h2>🎯 Activity: Train on the AND Gate</h2>
+      <p>The AND gate: output is 1 only when <strong>both</strong> inputs are 1. Can our neuron learn this? Watch it adjust weights in real time!</p>
+
+      <div class="interactive-area">
+        <div class="grid-2">
+          <div>
+            <canvas id="and-canvas" width="400" height="300"></canvas>
+            <div class="stats">
+              <div class="stat"><div class="stat-value" id="and-epoch">0</div><div class="stat-label">Epoch</div></div>
+              <div class="stat"><div class="stat-value" id="and-loss">—</div><div class="stat-label">Loss</div></div>
+              <div class="stat"><div class="stat-value" id="and-w1">—</div><div class="stat-label">Weight 1</div></div>
+              <div class="stat"><div class="stat-value" id="and-w2">—</div><div class="stat-label">Weight 2</div></div>
+              <div class="stat"><div class="stat-value" id="and-b">—</div><div class="stat-label">Bias</div></div>
+            </div>
+          </div>
+          <div>
+            <canvas id="and-loss-chart" width="400" height="200"></canvas>
+            <div id="and-outputs" class="narration" style="margin-top:12px;">Press Train to begin.</div>
+          </div>
+        </div>
+        <div class="controls">
+          <button class="btn btn-primary btn-sm" id="train-and-btn">▶ Train</button>
+          <button class="btn btn-secondary btn-sm" id="reset-and-btn">Reset</button>
+          <div class="control-group">
+            <label>Learning Rate</label>
+            <input type="range" id="and-lr" min="0.1" max="5" step="0.1" value="2" style="width:100px;">
+            <span class="slider-value" id="and-lr-val">2.0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/particles.js"></script>
+  <script src="/js/neural-engine.js"></script>
+  <script src="/js/viz.js"></script>
+  <script src="/js/nav.js"></script>
+  <script>
+    const ps = new ParticleSystem(); ps.start();
+    const $ = id => document.getElementById(id);
+
+    // ── Loss landscape ball ──
+    const lossCanvas = $('loss-canvas');
+    const lossCtx = lossCanvas.getContext('2d');
+    let ballX = Math.random() * 4 + 1; // Start somewhere on the curve
+    let ballAnimating = false;
+    let ballLr = 0.1;
+
+    // Simple quadratic loss: L(w) = (w - 3)^2 + 0.5*sin(w*3)*2 + 1
+    function lossFn(w) {
+      return (w - 3) * (w - 3) + Math.sin(w * 2) * 1.5 + 2;
+    }
+    function lossGrad(w) {
+      return 2 * (w - 3) + Math.cos(w * 2) * 3;
+    }
+
+    function drawLossLandscape() {
+      const w = lossCanvas.width, h = lossCanvas.height;
+      lossCtx.clearRect(0, 0, w, h);
+
+      // Draw landscape
+      const xMin = -1, xMax = 7;
+      const samples = [];
+      for (let i = 0; i <= w; i++) {
+        const x = xMin + (i / w) * (xMax - xMin);
+        samples.push({ x: i, y: lossFn(x) });
+      }
+      const maxY = Math.max(...samples.map(s => s.y));
+      const minY = Math.min(...samples.map(s => s.y));
+      const padding = 40;
+
+      // Fill gradient under curve
+      lossCtx.beginPath();
+      lossCtx.moveTo(0, h);
+      for (const s of samples) {
+        const py = padding + (1 - (s.y - minY) / (maxY - minY + 1)) * (h - padding * 2);
+        lossCtx.lineTo(s.x, py);
+      }
+      lossCtx.lineTo(w, h);
+      const grad = lossCtx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, 'rgba(139, 92, 246, 0.15)');
+      grad.addColorStop(1, 'rgba(139, 92, 246, 0.02)');
+      lossCtx.fillStyle = grad;
+      lossCtx.fill();
+
+      // Draw curve
+      lossCtx.beginPath();
+      for (let i = 0; i <= w; i++) {
+        const py = padding + (1 - (samples[i].y - minY) / (maxY - minY + 1)) * (h - padding * 2);
+        if (i === 0) lossCtx.moveTo(i, py); else lossCtx.lineTo(i, py);
+      }
+      lossCtx.strokeStyle = Viz.colors.purple;
+      lossCtx.lineWidth = 3;
+      lossCtx.stroke();
+
+      // Ball
+      const ballPx = ((ballX - xMin) / (xMax - xMin)) * w;
+      const ballPy = padding + (1 - (lossFn(ballX) - minY) / (maxY - minY + 1)) * (h - padding * 2);
+      lossCtx.beginPath();
+      lossCtx.arc(ballPx, ballPy, 10, 0, Math.PI * 2);
+      lossCtx.fillStyle = Viz.colors.orange;
+      lossCtx.fill();
+      lossCtx.strokeStyle = '#fff';
+      lossCtx.lineWidth = 2;
+      lossCtx.stroke();
+
+      // Labels
+      lossCtx.fillStyle = Viz.colors.textLight;
+      lossCtx.font = '11px Inter, sans-serif';
+      lossCtx.textAlign = 'center';
+      lossCtx.fillText('Weight value →', w / 2, h - 5);
+      lossCtx.save();
+      lossCtx.translate(12, h / 2);
+      lossCtx.rotate(-Math.PI / 2);
+      lossCtx.fillText('Loss (error) →', 0, 0);
+      lossCtx.restore();
+    }
+
+    function animateBall() {
+      if (!ballAnimating) return;
+      const grad = lossGrad(ballX);
+      ballX -= ballLr * grad * 0.05;
+      ballX = Math.max(-0.5, Math.min(6.5, ballX));
+      drawLossLandscape();
+
+      const loss = lossFn(ballX);
+      $('ball-narration').innerHTML = `Ball at weight = <strong>${ballX.toFixed(3)}</strong>, loss = <strong>${loss.toFixed(3)}</strong>. Gradient = ${grad.toFixed(3)}. ${Math.abs(grad) < 0.1 ? '🎯 Found a minimum!' : 'Still rolling...'}`;
+
+      if (Math.abs(grad) < 0.05) {
+        ballAnimating = false;
+        $('ball-narration').innerHTML += ' <strong>Converged!</strong>';
+        return;
+      }
+      requestAnimationFrame(animateBall);
+    }
+
+    $('drop-btn').addEventListener('click', () => {
+      if (ballAnimating) return;
+      ballLr = parseFloat($('ball-lr').value);
+      ballAnimating = true;
+      animateBall();
+    });
+
+    $('reset-ball-btn').addEventListener('click', () => {
+      ballAnimating = false;
+      ballX = Math.random() * 5 + 0.5;
+      drawLossLandscape();
+      $('ball-narration').textContent = 'Ball reset! Click "Drop the Ball" again.';
+    });
+
+    $('ball-lr').addEventListener('input', () => {
+      ballLr = parseFloat($('ball-lr').value);
+      $('ball-lr-val').textContent = ballLr.toFixed(2);
+    });
+
+    drawLossLandscape();
+
+    // ── AND gate training ──
+    const andData = [
+      { input: [0, 0], target: [0] },
+      { input: [0, 1], target: [0] },
+      { input: [1, 0], target: [0] },
+      { input: [1, 1], target: [1] }
+    ];
+
+    let andNet = new NeuralEngine.NeuralNetwork([2, 1], 'sigmoid', 'sigmoid');
+    let andHistory = [];
+    let andTraining = false;
+    let andAnimId = null;
+
+    const andCanvas = $('and-canvas');
+    const andCtx = andCanvas.getContext('2d');
+    const andLossCanvas = $('and-loss-chart');
+    const andLossCtx = andLossCanvas.getContext('2d');
+
+    function drawAndViz() {
+      const w = andCanvas.width, h = andCanvas.height;
+      andCtx.clearRect(0, 0, w, h);
+
+      // Decision boundary (2x2 grid mapped to canvas)
+      const res = 40;
+      const grid = andNet.classifyGrid(res, -0.5, 1.5, -0.5, 1.5);
+      Viz.drawDecisionBoundary(andCtx, grid, res, w, h);
+
+      // Data points
+      Viz.drawDataPoints(andCtx, andData, w, h, [-0.5, 1.5, -0.5, 1.5]);
+
+      // Labels for data points
+      andCtx.font = '11px Inter, sans-serif';
+      andCtx.textAlign = 'left';
+      for (const pt of andData) {
+        const px = ((pt.input[0] + 0.5) / 2) * w;
+        const py = ((pt.input[1] + 0.5) / 2) * h;
+        const out = andNet.forward(pt.input)[0];
+        andCtx.fillStyle = Viz.colors.text;
+        andCtx.fillText(`${out.toFixed(2)}`, px + 8, py - 2);
+      }
+
+      // Loss chart
+      Viz.drawLossChart(andLossCtx, andHistory, andLossCanvas.width, andLossCanvas.height);
+
+      // Stats
+      const layer = andNet.layers[0];
+      $('and-epoch').textContent = andNet.epoch;
+      $('and-loss').textContent = andNet.loss === Infinity ? '—' : andNet.loss.toFixed(5);
+      $('and-w1').textContent = layer.weights[0][0].toFixed(3);
+      $('and-w2').textContent = layer.weights[0][1].toFixed(3);
+      $('and-b').textContent = layer.biases[0].toFixed(3);
+
+      // Outputs
+      const outs = andData.map(d => {
+        const o = andNet.forward(d.input)[0];
+        const correct = Math.abs(o - d.target[0]) < 0.3;
+        return `[${d.input}]→${o.toFixed(2)} ${correct ? '✅' : '❌'}`;
+      });
+      $('and-outputs').innerHTML = outs.join(' &nbsp;|&nbsp; ');
+    }
+
+    function trainAndStep() {
+      if (!andTraining) return;
+      const lr = parseFloat($('and-lr').value);
+      for (let i = 0; i < 5; i++) {
+        const loss = andNet.trainBatch(andData, lr, 'mse');
+        andHistory.push(loss);
+      }
+      drawAndViz();
+
+      // Check convergence
+      const allCorrect = andData.every(d => {
+        const o = andNet.forward(d.input)[0];
+        return Math.abs(o - d.target[0]) < 0.2;
+      });
+
+      if (allCorrect && andNet.epoch > 20) {
+        andTraining = false;
+        $('train-and-btn').textContent = '▶ Train';
+        $('and-outputs').innerHTML += ' &nbsp;<strong>🎉 Learned the AND gate!</strong>';
+        Nav.setCompleted(2);
+        return;
+      }
+
+      if (andNet.epoch < 2000) {
+        andAnimId = requestAnimationFrame(trainAndStep);
+      } else {
+        andTraining = false;
+        $('train-and-btn').textContent = '▶ Train';
+      }
+    }
+
+    $('train-and-btn').addEventListener('click', () => {
+      andTraining = !andTraining;
+      $('train-and-btn').textContent = andTraining ? '⏸ Pause' : '▶ Train';
+      if (andTraining) trainAndStep();
+    });
+
+    $('reset-and-btn').addEventListener('click', () => {
+      andTraining = false;
+      if (andAnimId) cancelAnimationFrame(andAnimId);
+      andNet = new NeuralEngine.NeuralNetwork([2, 1], 'sigmoid', 'sigmoid');
+      andHistory = [];
+      $('train-and-btn').textContent = '▶ Train';
+      drawAndViz();
+    });
+
+    $('and-lr').addEventListener('input', () => {
+      $('and-lr-val').textContent = parseFloat($('and-lr').value).toFixed(1);
+    });
+
+    drawAndViz();
+  </script>
+</body>
+</html>

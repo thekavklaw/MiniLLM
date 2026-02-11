@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chapter 6: Paying Attention — MiniLLM</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body data-chapter="6">
+  <div class="chapter-content">
+    <div class="chapter-header fade-in-up">
+      <div class="chapter-number">Chapter 6</div>
+      <h1>Paying Attention</h1>
+      <p>The secret ingredient of transformers: letting each word decide which other words matter most.</p>
+    </div>
+
+    <div class="section fade-in-up delay-1">
+      <h2>📚 The Library Metaphor</h2>
+      <p>Imagine you're in a library looking for a book. You have a <strong style="color:var(--purple)">Query</strong> (what you're looking for), each book has a <strong style="color:var(--blue)">Key</strong> (its title), and a <strong style="color:var(--orange)">Value</strong> (its contents). You compare your query to each key to decide which books to read most carefully.</p>
+      <p>Attention works the same way. Each word creates a query, key, and value. The query-key match determines how much attention to pay.</p>
+    </div>
+
+    <div class="section fade-in-up delay-2">
+      <h2>🔥 Interactive Attention Heatmap</h2>
+      <p>Type a sentence and see which words attend to which. Brighter cells = more attention.</p>
+
+      <div class="interactive-area">
+        <input type="text" id="attn-input" value="The cat sat on the mat" style="width:100%;padding:12px 16px;border:2px solid var(--card-border);border-radius:var(--radius-sm);font-family:inherit;font-size:1rem;outline:none;" placeholder="Type a sentence...">
+        <canvas id="attn-canvas" width="700" height="500" style="margin-top:16px;"></canvas>
+        <div class="narration" style="margin-top:12px;">Each row shows how much a word "attends to" every other word. The diagonal is often strong (words attend to themselves). Related words like "cat" and "sat" may show stronger connections.</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/particles.js"></script>
+  <script src="/js/viz.js"></script>
+  <script src="/js/nav.js"></script>
+  <script>
+    const ps = new ParticleSystem(); ps.start();
+    const $ = id => document.getElementById(id);
+
+    function softmax(arr) {
+      const max = Math.max(...arr);
+      const exps = arr.map(x => Math.exp(x - max));
+      const sum = exps.reduce((a, b) => a + b, 0);
+      return exps.map(x => x / sum);
+    }
+
+    // Generate plausible attention weights using simple heuristics
+    function generateAttention(words) {
+      const n = words.length;
+      const attn = [];
+      for (let i = 0; i < n; i++) {
+        const scores = [];
+        for (let j = 0; j < n; j++) {
+          let score = 0;
+          // Self-attention bias
+          if (i === j) score += 2;
+          // Adjacent words
+          if (Math.abs(i - j) === 1) score += 1;
+          // Same word
+          if (words[i].toLowerCase() === words[j].toLowerCase()) score += 1.5;
+          // Function words attend broadly
+          if (['the', 'a', 'an', 'on', 'in', 'at', 'to', 'is', 'was'].includes(words[i].toLowerCase())) score += 0.3;
+          // Content words attend to nearby content words
+          if (!['the', 'a', 'an', 'on', 'in', 'at', 'to', 'is', 'was'].includes(words[i].toLowerCase()) &&
+              !['the', 'a', 'an', 'on', 'in', 'at', 'to', 'is', 'was'].includes(words[j].toLowerCase())) {
+            score += 0.5 / (Math.abs(i - j) + 1);
+          }
+          score += (Math.random() - 0.5) * 0.5;
+          scores.push(score);
+        }
+        attn.push(softmax(scores));
+      }
+      return attn;
+    }
+
+    function drawAttention() {
+      const text = $('attn-input').value.trim();
+      if (!text) return;
+      const words = text.split(/\s+/);
+      const n = words.length;
+      if (n < 2 || n > 20) return;
+
+      const attn = generateAttention(words);
+      const canvas = $('attn-canvas');
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const margin = 100;
+      const cellW = Math.min(50, (w - margin) / n);
+      const cellH = Math.min(40, (h - margin) / n);
+      const startX = margin;
+      const startY = margin;
+
+      // Column headers
+      ctx.font = '11px Inter, sans-serif';
+      ctx.fillStyle = '#1e293b';
+      for (let j = 0; j < n; j++) {
+        ctx.save();
+        ctx.translate(startX + j * cellW + cellW / 2, margin - 10);
+        ctx.rotate(-Math.PI / 4);
+        ctx.textAlign = 'left';
+        ctx.fillText(words[j], 0, 0);
+        ctx.restore();
+      }
+
+      // Row headers + cells
+      for (let i = 0; i < n; i++) {
+        // Row label
+        ctx.fillStyle = '#1e293b';
+        ctx.font = '11px Inter, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(words[i], margin - 10, startY + i * cellH + cellH / 2 + 4);
+
+        for (let j = 0; j < n; j++) {
+          const val = attn[i][j];
+          // Color: purple intensity
+          const r = Math.round(139 + (255 - 139) * (1 - val));
+          const g = Math.round(92 + (255 - 92) * (1 - val));
+          const b = Math.round(246 + (255 - 246) * (1 - val));
+          ctx.fillStyle = `rgb(${r},${g},${b})`;
+          ctx.fillRect(startX + j * cellW, startY + i * cellH, cellW - 1, cellH - 1);
+
+          // Value text
+          if (cellW > 25) {
+            ctx.fillStyle = val > 0.3 ? '#fff' : '#64748b';
+            ctx.font = '9px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(val.toFixed(2), startX + j * cellW + cellW / 2, startY + i * cellH + cellH / 2 + 3);
+          }
+        }
+      }
+
+      // Axis labels
+      ctx.fillStyle = '#64748b';
+      ctx.font = '12px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('← attends to →', startX + (n * cellW) / 2, h - 10);
+    }
+
+    $('attn-input').addEventListener('input', drawAttention);
+    drawAttention();
+    Nav.setCompleted(6);
+  </script>
+</body>
+</html>

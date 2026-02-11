@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chapter 8: From Tiny to GPT — MiniLLM</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body data-chapter="8">
+  <div class="chapter-content">
+    <div class="chapter-header fade-in-up">
+      <div class="chapter-number">Chapter 8</div>
+      <h1>From Tiny to GPT</h1>
+      <p>Our playground network had ~50 parameters. GPT-4 has over a trillion. Let's visualize what scale really means.</p>
+    </div>
+
+    <div class="section fade-in-up delay-1">
+      <h2>📊 Parameter Count Comparison</h2>
+      <p>Each model below is drawn to scale (logarithmic). Hover to see details.</p>
+
+      <div class="interactive-area">
+        <canvas id="scale-canvas" width="800" height="400"></canvas>
+      </div>
+    </div>
+
+    <div class="section fade-in-up delay-2">
+      <h2>📚 Training Data Scale</h2>
+      <p>More parameters need more data. Here's how much text these models consumed during training.</p>
+
+      <div class="interactive-area">
+        <canvas id="data-canvas" width="800" height="300"></canvas>
+      </div>
+    </div>
+
+    <div class="section fade-in-up delay-3">
+      <h2>🎯 RLHF: Teaching AI to Be Helpful</h2>
+      <p>Raw language models just predict the next word. <strong>RLHF</strong> (Reinforcement Learning from Human Feedback) teaches them to be helpful, harmless, and honest.</p>
+
+      <div class="interactive-area">
+        <div style="display:flex;gap:24px;flex-wrap:wrap;justify-content:center;">
+          <div class="card" style="flex:1;min-width:200px;text-align:center;border-left:4px solid var(--blue);">
+            <div style="font-size:2rem;margin-bottom:8px;">1️⃣</div>
+            <h3 style="font-size:0.95rem;">Pre-training</h3>
+            <p style="font-size:0.8rem;">Learn to predict the next word from billions of text documents. Gain knowledge.</p>
+          </div>
+          <div class="card" style="flex:1;min-width:200px;text-align:center;border-left:4px solid var(--purple);">
+            <div style="font-size:2rem;margin-bottom:8px;">2️⃣</div>
+            <h3 style="font-size:0.95rem;">Supervised Fine-tuning</h3>
+            <p style="font-size:0.8rem;">Learn to follow instructions from human-written example conversations.</p>
+          </div>
+          <div class="card" style="flex:1;min-width:200px;text-align:center;border-left:4px solid var(--orange);">
+            <div style="font-size:2rem;margin-bottom:8px;">3️⃣</div>
+            <h3 style="font-size:0.95rem;">RLHF</h3>
+            <p style="font-size:0.8rem;">Humans rank outputs. A reward model learns what "good" means. The LLM optimizes for it.</p>
+          </div>
+        </div>
+        <div class="narration" style="margin-top:16px;">This is why ChatGPT sounds helpful and polite — it's been trained with human feedback to prefer helpful, safe responses over raw text prediction.</div>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:48px;" class="fade-in-up delay-4">
+      <h2 style="font-size:2rem;">🎉 You Made It!</h2>
+      <p style="font-size:1.1rem;color:var(--text-light);max-width:600px;margin:16px auto 24px;">You've journeyed from a single neuron to understanding how GPT works. You now know more about AI than most people on Earth.</p>
+      <a href="/" class="btn btn-primary" style="font-size:1.1rem;padding:16px 36px;">← Back to Home</a>
+    </div>
+  </div>
+
+  <script src="/js/particles.js"></script>
+  <script src="/js/viz.js"></script>
+  <script src="/js/nav.js"></script>
+  <script>
+    const ps = new ParticleSystem(); ps.start();
+    const $ = id => document.getElementById(id);
+
+    // Parameter scale visualization
+    const models = [
+      { name: 'Our Playground', params: 50, color: '#22c55e' },
+      { name: 'MNIST Network', params: 100000, color: '#3b82f6' },
+      { name: 'GPT-2 Small', params: 124e6, color: '#8b5cf6' },
+      { name: 'GPT-2 Large', params: 774e6, color: '#a78bfa' },
+      { name: 'GPT-3', params: 175e9, color: '#7c3aed' },
+      { name: 'GPT-4', params: 1.8e12, color: '#f97316' },
+    ];
+
+    const sc = $('scale-canvas'), sctx = sc.getContext('2d');
+
+    function drawScale() {
+      const w = sc.width, h = sc.height;
+      sctx.clearRect(0, 0, w, h);
+
+      const maxLog = Math.log10(models[models.length - 1].params);
+      const minLog = Math.log10(models[0].params);
+      const barH = 36;
+      const gap = 14;
+      const startY = 30;
+      const labelW = 120;
+      const barAreaW = w - labelW - 100;
+
+      for (let i = 0; i < models.length; i++) {
+        const m = models[i];
+        const y = startY + i * (barH + gap);
+        const logVal = Math.log10(m.params);
+        const barW = ((logVal - minLog) / (maxLog - minLog)) * barAreaW + 20;
+
+        // Bar
+        const grad = sctx.createLinearGradient(labelW, y, labelW + barW, y);
+        grad.addColorStop(0, Viz.hexToRgba(m.color, 0.6));
+        grad.addColorStop(1, m.color);
+        sctx.fillStyle = grad;
+        sctx.beginPath();
+        sctx.roundRect?.(labelW, y, barW, barH, 8) || sctx.rect(labelW, y, barW, barH);
+        sctx.fill();
+
+        // Label
+        sctx.fillStyle = '#1e293b';
+        sctx.font = '12px Inter, sans-serif';
+        sctx.textAlign = 'right';
+        sctx.fillText(m.name, labelW - 10, y + barH / 2 + 4);
+
+        // Value
+        sctx.fillStyle = '#fff';
+        sctx.font = '600 11px Inter, sans-serif';
+        sctx.textAlign = 'left';
+        let paramStr;
+        if (m.params >= 1e12) paramStr = (m.params / 1e12).toFixed(1) + 'T';
+        else if (m.params >= 1e9) paramStr = (m.params / 1e9).toFixed(0) + 'B';
+        else if (m.params >= 1e6) paramStr = (m.params / 1e6).toFixed(0) + 'M';
+        else if (m.params >= 1e3) paramStr = (m.params / 1e3).toFixed(0) + 'K';
+        else paramStr = m.params.toString();
+        sctx.fillText(paramStr + ' params', labelW + 8, y + barH / 2 + 4);
+      }
+
+      sctx.fillStyle = '#94a3b8';
+      sctx.font = '10px Inter, sans-serif';
+      sctx.textAlign = 'center';
+      sctx.fillText('Logarithmic scale — each step is 10× bigger', w / 2, h - 10);
+    }
+
+    // Training data visualization
+    const dataModels = [
+      { name: 'GPT-2', tokens: '10B tokens', books: '~40K books', color: '#3b82f6' },
+      { name: 'GPT-3', tokens: '300B tokens', books: '~1.2M books', color: '#8b5cf6' },
+      { name: 'GPT-4', tokens: '~13T tokens', books: '~50M books', color: '#f97316' },
+    ];
+
+    const dc = $('data-canvas'), dctx = dc.getContext('2d');
+
+    function drawData() {
+      const w = dc.width, h = dc.height;
+      dctx.clearRect(0, 0, w, h);
+
+      const cardW = 220, cardH = 180, gap = 30;
+      const totalW = dataModels.length * cardW + (dataModels.length - 1) * gap;
+      const startX = (w - totalW) / 2;
+
+      for (let i = 0; i < dataModels.length; i++) {
+        const m = dataModels[i];
+        const x = startX + i * (cardW + gap);
+        const y = 30;
+
+        // Card
+        dctx.fillStyle = Viz.hexToRgba(m.color, 0.08);
+        dctx.beginPath();
+        dctx.roundRect?.(x, y, cardW, cardH, 12) || dctx.rect(x, y, cardW, cardH);
+        dctx.fill();
+        dctx.strokeStyle = Viz.hexToRgba(m.color, 0.3);
+        dctx.lineWidth = 1;
+        dctx.stroke();
+
+        // Name
+        dctx.fillStyle = m.color;
+        dctx.font = '700 18px Inter, sans-serif';
+        dctx.textAlign = 'center';
+        dctx.fillText(m.name, x + cardW / 2, y + 35);
+
+        // Tokens
+        dctx.fillStyle = '#1e293b';
+        dctx.font = '600 14px Inter, sans-serif';
+        dctx.fillText(m.tokens, x + cardW / 2, y + 70);
+
+        // Books equivalent
+        dctx.fillStyle = '#64748b';
+        dctx.font = '12px Inter, sans-serif';
+        dctx.fillText('≈ ' + m.books, x + cardW / 2, y + 95);
+
+        // Book icons (scaled)
+        const iconCount = [3, 8, 20][i];
+        dctx.font = '14px serif';
+        const iconsPerRow = 10;
+        for (let b = 0; b < iconCount; b++) {
+          const bx = x + 20 + (b % iconsPerRow) * 18;
+          const by = y + 115 + Math.floor(b / iconsPerRow) * 18;
+          dctx.fillText('📚', bx, by);
+        }
+      }
+    }
+
+    drawScale();
+    drawData();
+    Nav.setCompleted(8);
+  </script>
+</body>
+</html>

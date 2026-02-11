@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chapter 3: Layers of Thinking — MiniLLM</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body data-chapter="3">
+  <div class="chapter-content">
+    <div class="chapter-header fade-in-up">
+      <div class="chapter-number">Chapter 3</div>
+      <h1>Layers of Thinking</h1>
+      <p>One neuron can only draw a straight line. Stack them in layers, and they can learn anything.</p>
+    </div>
+
+    <div class="section fade-in-up delay-1">
+      <h2>❌ The XOR Problem</h2>
+      <p>XOR means "one or the other, but not both." A single neuron can't solve this — it needs a <strong>hidden layer</strong>. Watch the single neuron fail, then add a layer and see it succeed!</p>
+
+      <div class="interactive-area">
+        <div class="grid-2">
+          <div>
+            <h3 style="font-size:1rem;margin-bottom:8px;">Single Neuron (fails!)</h3>
+            <canvas id="xor-single" width="300" height="300"></canvas>
+            <div class="stats">
+              <div class="stat"><div class="stat-value" id="xor1-epoch">0</div><div class="stat-label">Epoch</div></div>
+              <div class="stat"><div class="stat-value" id="xor1-loss">—</div><div class="stat-label">Loss</div></div>
+            </div>
+          </div>
+          <div>
+            <h3 style="font-size:1rem;margin-bottom:8px;">Two Layers (succeeds!)</h3>
+            <canvas id="xor-multi" width="300" height="300"></canvas>
+            <div class="stats">
+              <div class="stat"><div class="stat-value" id="xor2-epoch">0</div><div class="stat-label">Epoch</div></div>
+              <div class="stat"><div class="stat-value" id="xor2-loss">—</div><div class="stat-label">Loss</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="controls">
+          <button class="btn btn-primary btn-sm" id="xor-train-btn">▶ Train Both</button>
+          <button class="btn btn-secondary btn-sm" id="xor-reset-btn">Reset</button>
+        </div>
+        <div class="narration" id="xor-narration">Press "Train Both" to watch the single neuron struggle while the 2-layer network learns XOR!</div>
+      </div>
+    </div>
+
+    <div class="section fade-in-up delay-2">
+      <h2>🔬 Build Your Own Network</h2>
+      <p>Choose a topology and watch the decision boundary form in real time. Add more neurons to solve harder problems!</p>
+
+      <div class="interactive-area">
+        <div class="controls">
+          <div class="control-group">
+            <label>Hidden Layers:</label>
+            <select id="custom-layers">
+              <option value="4">1 layer (4 neurons)</option>
+              <option value="4,4" selected>2 layers (4, 4)</option>
+              <option value="6,4">2 layers (6, 4)</option>
+              <option value="4,4,4">3 layers (4, 4, 4)</option>
+              <option value="8,6,4">3 layers (8, 6, 4)</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label>Dataset:</label>
+            <select id="custom-dataset">
+              <option value="xor">XOR</option>
+              <option value="circle">Circle</option>
+              <option value="spiral">Spiral</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label>Activation:</label>
+            <select id="custom-activation">
+              <option value="sigmoid">Sigmoid</option>
+              <option value="relu" selected>ReLU</option>
+              <option value="tanh">Tanh</option>
+            </select>
+          </div>
+          <button class="btn btn-primary btn-sm" id="custom-train-btn">▶ Train</button>
+          <button class="btn btn-secondary btn-sm" id="custom-reset-btn">Reset</button>
+        </div>
+
+        <div class="grid-2" style="margin-top:16px;">
+          <div>
+            <canvas id="custom-boundary" width="400" height="400"></canvas>
+          </div>
+          <div>
+            <canvas id="custom-network" width="400" height="250"></canvas>
+            <canvas id="custom-loss" width="400" height="130"></canvas>
+            <div class="stats">
+              <div class="stat"><div class="stat-value" id="custom-epoch">0</div><div class="stat-label">Epoch</div></div>
+              <div class="stat"><div class="stat-value" id="custom-loss-val">—</div><div class="stat-label">Loss</div></div>
+              <div class="stat"><div class="stat-value" id="custom-params">—</div><div class="stat-label">Parameters</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/particles.js"></script>
+  <script src="/js/neural-engine.js"></script>
+  <script src="/js/viz.js"></script>
+  <script src="/js/nav.js"></script>
+  <script>
+    const ps = new ParticleSystem(); ps.start();
+    const $ = id => document.getElementById(id);
+    const { NeuralNetwork, Datasets } = NeuralEngine;
+
+    // ── XOR comparison ──
+    const xorData = [
+      { input: [-2, -2], target: [0] },
+      { input: [-2, 2], target: [1] },
+      { input: [2, -2], target: [1] },
+      { input: [2, 2], target: [0] }
+    ];
+
+    let xorSingle = new NeuralNetwork([2, 1], 'sigmoid', 'sigmoid');
+    let xorMulti = new NeuralNetwork([2, 4, 1], 'sigmoid', 'sigmoid');
+    let xorTraining = false;
+    let xorAnimId = null;
+
+    function drawXor() {
+      // Single
+      const c1 = $('xor-single'), ctx1 = c1.getContext('2d');
+      const grid1 = xorSingle.classifyGrid(30, -4, 4, -4, 4);
+      ctx1.clearRect(0, 0, c1.width, c1.height);
+      Viz.drawDecisionBoundary(ctx1, grid1, 30, c1.width, c1.height);
+      Viz.drawDataPoints(ctx1, xorData, c1.width, c1.height, [-4, 4, -4, 4]);
+      $('xor1-epoch').textContent = xorSingle.epoch;
+      $('xor1-loss').textContent = xorSingle.loss === Infinity ? '—' : xorSingle.loss.toFixed(5);
+
+      // Multi
+      const c2 = $('xor-multi'), ctx2 = c2.getContext('2d');
+      const grid2 = xorMulti.classifyGrid(30, -4, 4, -4, 4);
+      ctx2.clearRect(0, 0, c2.width, c2.height);
+      Viz.drawDecisionBoundary(ctx2, grid2, 30, c2.width, c2.height);
+      Viz.drawDataPoints(ctx2, xorData, c2.width, c2.height, [-4, 4, -4, 4]);
+      $('xor2-epoch').textContent = xorMulti.epoch;
+      $('xor2-loss').textContent = xorMulti.loss === Infinity ? '—' : xorMulti.loss.toFixed(5);
+    }
+
+    function trainXorStep() {
+      if (!xorTraining) return;
+      for (let i = 0; i < 10; i++) {
+        xorSingle.trainBatch(xorData, 1, 'mse');
+        xorMulti.trainBatch(xorData, 1, 'mse');
+      }
+      drawXor();
+
+      if (xorMulti.loss < 0.01 && xorMulti.epoch > 50) {
+        $('xor-narration').innerHTML = `<strong>🎉 The 2-layer network solved XOR!</strong> Notice the single neuron is stuck — it can only draw a straight line, which can't separate XOR. The hidden layer gives the network the ability to create curved boundaries.`;
+        Nav.setCompleted(3);
+      }
+
+      if (xorMulti.epoch < 3000) {
+        xorAnimId = requestAnimationFrame(trainXorStep);
+      } else {
+        xorTraining = false;
+        $('xor-train-btn').textContent = '▶ Train Both';
+      }
+    }
+
+    $('xor-train-btn').addEventListener('click', () => {
+      xorTraining = !xorTraining;
+      $('xor-train-btn').textContent = xorTraining ? '⏸ Pause' : '▶ Train Both';
+      if (xorTraining) trainXorStep();
+    });
+
+    $('xor-reset-btn').addEventListener('click', () => {
+      xorTraining = false;
+      if (xorAnimId) cancelAnimationFrame(xorAnimId);
+      xorSingle = new NeuralNetwork([2, 1], 'sigmoid', 'sigmoid');
+      xorMulti = new NeuralNetwork([2, 4, 1], 'sigmoid', 'sigmoid');
+      $('xor-train-btn').textContent = '▶ Train Both';
+      $('xor-narration').textContent = 'Press "Train Both" to watch the comparison!';
+      drawXor();
+    });
+
+    drawXor();
+
+    // ── Custom network ──
+    let customNet, customData, customHistory, customTraining = false, customAnimId;
+
+    function initCustom() {
+      const layersStr = $('custom-layers').value;
+      const hidden = layersStr.split(',').map(Number);
+      const activation = $('custom-activation').value;
+      const datasetName = $('custom-dataset').value;
+
+      const topology = [2, ...hidden, 1];
+      customNet = new NeuralNetwork(topology, activation, 'sigmoid');
+      customData = Datasets[datasetName](200);
+      customHistory = [];
+      customTraining = false;
+      $('custom-train-btn').textContent = '▶ Train';
+      $('custom-params').textContent = customNet.paramCount();
+      drawCustom();
+    }
+
+    function drawCustom() {
+      // Boundary
+      const bc = $('custom-boundary'), bctx = bc.getContext('2d');
+      bctx.clearRect(0, 0, bc.width, bc.height);
+      const grid = customNet.classifyGrid(40, -6, 6, -6, 6);
+      Viz.drawDecisionBoundary(bctx, grid, 40, bc.width, bc.height);
+      Viz.drawDataPoints(bctx, customData, bc.width, bc.height);
+
+      // Network
+      const nc = $('custom-network'), nctx = nc.getContext('2d');
+      Viz.drawNetwork(nctx, customNet, nc.width, nc.height, customData[0]?.input);
+
+      // Loss
+      const lc = $('custom-loss'), lctx = lc.getContext('2d');
+      Viz.drawLossChart(lctx, customHistory, lc.width, lc.height);
+
+      $('custom-epoch').textContent = customNet.epoch;
+      $('custom-loss-val').textContent = customNet.loss === Infinity ? '—' : customNet.loss.toFixed(5);
+    }
+
+    function trainCustomStep() {
+      if (!customTraining) return;
+      for (let i = 0; i < 5; i++) {
+        const loss = customNet.trainBatch(customData, 0.1, 'mse');
+        customHistory.push(loss);
+      }
+      drawCustom();
+
+      if (customNet.epoch < 5000) {
+        customAnimId = requestAnimationFrame(trainCustomStep);
+      } else {
+        customTraining = false;
+        $('custom-train-btn').textContent = '▶ Train';
+      }
+    }
+
+    $('custom-train-btn').addEventListener('click', () => {
+      customTraining = !customTraining;
+      $('custom-train-btn').textContent = customTraining ? '⏸ Pause' : '▶ Train';
+      if (customTraining) trainCustomStep();
+    });
+
+    $('custom-reset-btn').addEventListener('click', () => {
+      customTraining = false;
+      if (customAnimId) cancelAnimationFrame(customAnimId);
+      initCustom();
+    });
+
+    ['custom-layers', 'custom-dataset', 'custom-activation'].forEach(id =>
+      $(id).addEventListener('change', () => {
+        customTraining = false;
+        if (customAnimId) cancelAnimationFrame(customAnimId);
+        initCustom();
+      })
+    );
+
+    initCustom();
+  </script>
+</body>
+</html>
