@@ -2,37 +2,19 @@
 (function() {
   'use strict';
 
-  // Turnstile helper
-  const TURNSTILE_SITEKEY = '0x4AAAAAACZGxpcf0vhl9Oes';
-  let turnstileToken = null;
-  let turnstileWidgetId = null;
-
+  // Turnstile helper — uses pre-rendered widget from index.html
   function getTurnstileToken() {
     return new Promise((resolve) => {
-      if (typeof turnstile === 'undefined') { resolve(null); return; }
-      const container = document.getElementById('turnstile-container');
-      if (!container) { resolve(null); return; }
-      container.style.opacity = '1';
-      container.style.pointerEvents = 'auto';
-      
-      if (turnstileWidgetId !== null) {
-        try { turnstile.reset(turnstileWidgetId); } catch(e) {}
+      // Already have a token
+      if (window._turnstileToken) {
+        resolve(window._turnstileToken);
+        return;
       }
-      
-      turnstileWidgetId = turnstile.render(container, {
-        sitekey: TURNSTILE_SITEKEY,
-        callback: function(token) {
-          turnstileToken = token;
-          container.style.opacity = '0';
-          container.style.pointerEvents = 'none';
-          resolve(token);
-        },
-        'error-callback': function() {
-          container.style.opacity = '0';
-          container.style.pointerEvents = 'none';
-          resolve(null);
-        }
-      });
+      // Wait for it (up to 15s)
+      if (window._turnstileResolvers) {
+        window._turnstileResolvers.push(resolve);
+      }
+      setTimeout(() => resolve(null), 15000);
     });
   }
 
