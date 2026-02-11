@@ -253,15 +253,8 @@ function lstmGenerate(preset, seed, length, temperature) {
 }
 
 // LSTM generation endpoint
-app.post('/api/generate', async (req, res) => {
+app.post('/api/generate', (req, res) => {
   const ip = req.headers['x-forwarded-for'] || req.ip;
-  
-  // Turnstile verification (first request per session)
-  if (req.body.turnstileToken) {
-    const ok = await verifyTurnstile(req.body.turnstileToken);
-    if (!ok) return res.status(403).json({ error: 'Verification failed.' });
-  }
-
   if (!checkRateLimit(ip, 15, 60000)) {
     return res.status(429).json({ error: 'Rate limited. Max 15 requests per minute.' });
   }
@@ -303,10 +296,6 @@ setInterval(() => {
 app.post('/api/train-custom', async (req, res) => {
   const ip = req.headers['x-forwarded-for'] || req.ip;
   
-  // Turnstile verification
-  const turnstileOk = await verifyTurnstile(req.body.turnstileToken);
-  if (!turnstileOk) return res.status(403).json({ error: 'Verification failed. Please try again.' });
-
   if (!checkRateLimit(ip, 3, 300000)) {
     return res.status(429).json({ error: 'Rate limited. Max 3 training requests per 5 minutes.' });
   }

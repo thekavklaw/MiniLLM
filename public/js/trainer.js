@@ -2,20 +2,7 @@
 (function() {
   'use strict';
 
-  // Turnstile helper — widget rendered inline, callback defined in index.html
-
-  function getTurnstileToken() {
-    return new Promise((resolve) => {
-      if (window._turnstileToken) { resolve(window._turnstileToken); return; }
-      // Poll for up to 10s
-      let elapsed = 0;
-      const interval = setInterval(() => {
-        elapsed += 200;
-        if (window._turnstileToken) { clearInterval(interval); resolve(window._turnstileToken); }
-        else if (elapsed >= 10000) { clearInterval(interval); resolve(null); }
-      }, 200);
-    });
-  }
+  // No Turnstile — server-side rate limits handle abuse prevention
 
   // Collapsible sections (landing page doesn't load nav.js)
   document.querySelectorAll('.collapsible-header').forEach(header => {
@@ -120,15 +107,12 @@
           return;
         }
         trainBtn.disabled = true;
-        trainBtn.textContent = '🔒 Verifying...';
+        trainBtn.textContent = '🧠 Training your model (~15-30s)...';
         try {
-          const tsToken = await getTurnstileToken();
-          if (!tsToken) { alert('Verification failed. Please try again.'); resetModel(); return; }
-          trainBtn.textContent = '🧠 Training your model (~15-30s)...';
           const resp = await fetch('/api/train-custom', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: customText, turnstileToken: tsToken })
+            body: JSON.stringify({ text: customText })
           });
           const data = await resp.json();
           if (!resp.ok) { alert(data.error || 'Training failed'); resetModel(); return; }
@@ -184,12 +168,9 @@
       }
 
       trainBtn.disabled = true;
-      trainBtn.textContent = '🔒 Verifying...';
+      trainBtn.textContent = '🧠 Loading neural network...';
 
       try {
-        const tsToken = await getTurnstileToken();
-        if (!tsToken) { alert('Verification failed. Please try again.'); resetModel(); return; }
-        trainBtn.textContent = '🧠 Loading neural network...';
 
         const infoResp = await fetch('/api/model-info');
         const info = await infoResp.json();
@@ -205,7 +186,7 @@
         const testResp = await fetch('/api/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: activePreset === 'python' ? 'def ' : 'The ', preset: activePreset, temperature: 0.7, length: 150, turnstileToken: tsToken })
+          body: JSON.stringify({ prompt: activePreset === 'python' ? 'def ' : 'The ', preset: activePreset, temperature: 0.7, length: 150 })
         });
         const testData = await testResp.json();
         const elapsed = (performance.now() - t0).toFixed(0);
