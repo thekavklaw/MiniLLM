@@ -234,24 +234,100 @@
     </div>
   </section>
 
-  <!-- ===== MARKOV COMPLETION BONUS ===== -->
+  <!-- ===== BONUS: MARKOV vs LLM ===== -->
   <section class="story-section train-section" id="markov">
     <div class="story-content">
-      <h2 class="reveal">Bonus: AI completes your sentence.</h2>
-      <p class="reveal delay-1" style="max-width:650px; margin:0 auto 1rem; font-size:0.95rem; color:var(--text-dim);">This uses a simple Markov chain — a statistical model that predicts the next character based on patterns in the training text.</p>
-      <div class="trainer-container reveal delay-2">
-        <div class="train-step">
-          <div class="markov-controls">
-            <select id="markov-preset" class="add-cat-select" style="min-width:160px;">
-              <option value="shakespeare">📜 Shakespeare</option>
-              <option value="recipes">🍳 Recipes</option>
-              <option value="python">🐍 Python</option>
-            </select>
+      <div class="collapsible-header reveal" style="font-size:1.15rem; padding:1rem 1.2rem; margin-bottom:0;">
+        🔍 What makes LLMs different from older ways we achieved text completion?
+      </div>
+      <div class="collapsible-body" style="padding:0;">
+        <div class="trainer-container" style="margin-top:0; border-top:none; border-top-left-radius:0; border-top-right-radius:0;">
+
+          <!-- Part 1: The old way -->
+          <div class="train-step" style="margin-bottom:2rem;">
+            <h3 style="color:var(--accent); margin-bottom:1rem;">Before neural networks: Markov chains</h3>
+            <p style="color:#2d3748; line-height:1.8; margin-bottom:1rem;">Long before ChatGPT, people built text generators using a much simpler idea: <strong>just count what usually comes next.</strong></p>
+            <p style="color:#2d3748; line-height:1.8; margin-bottom:1rem;">A <strong>Markov chain</strong> reads through a bunch of text and builds a lookup table. For every sequence of characters it sees, it records which character followed. Then to generate text, it just keeps looking up "given these last few characters, what's the most likely next one?" and picking randomly from the options.</p>
+
+            <!-- Diagram: How a Markov chain works -->
+            <div style="background:rgba(139,92,246,0.04); border:1px solid rgba(139,92,246,0.12); border-radius:12px; padding:1.5rem; margin:1.5rem 0;">
+              <h4 style="font-size:0.95rem; margin-bottom:1rem; color:var(--accent);">How it works: a simple example</h4>
+              <p style="color:#2d3748; font-size:0.92rem; line-height:1.7; margin-bottom:1rem;">Say you train on the text <code style="background:rgba(0,0,0,0.06); padding:2px 6px; border-radius:4px;">"the cat sat on the mat"</code> with a context window of 3 characters:</p>
+
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin:1rem 0;">
+                <div style="background:rgba(255,255,255,0.6); border-radius:8px; padding:1rem; font-family:monospace; font-size:0.82rem; line-height:2;">
+                  <div style="font-weight:700; color:var(--accent); margin-bottom:0.5rem; font-family:Inter,sans-serif; font-size:0.8rem;">LOOKUP TABLE</div>
+                  <div>"the" → <span style="color:var(--accent); font-weight:600;">' '</span> (space) 66%, <span style="color:#f97316; font-weight:600;">'m'</span> 33%</div>
+                  <div>"he " → <span style="color:var(--accent); font-weight:600;">'c'</span> 50%, <span style="color:#f97316; font-weight:600;">'m'</span> 50%</div>
+                  <div>"cat" → <span style="color:var(--accent); font-weight:600;">' '</span> 100%</div>
+                  <div>"at " → <span style="color:var(--accent); font-weight:600;">'s'</span> 50%, <span style="color:#f97316; font-weight:600;">'o'</span> 50%</div>
+                  <div>"sat" → <span style="color:var(--accent); font-weight:600;">' '</span> 100%</div>
+                  <div style="color:#94a3b8;">...and so on</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.6); border-radius:8px; padding:1rem; font-size:0.88rem; line-height:1.8; color:#2d3748;">
+                  <div style="font-weight:700; color:var(--accent); margin-bottom:0.5rem; font-size:0.8rem;">GENERATION</div>
+                  <div>Start with: <code>"the"</code></div>
+                  <div>→ Look up "the": pick <code>' '</code></div>
+                  <div>→ Look up "he ": pick <code>'c'</code></div>
+                  <div>→ Look up "e c": pick <code>'a'</code></div>
+                  <div>→ Look up " ca": pick <code>'t'</code></div>
+                  <div>→ Result: <strong>"the cat..."</strong></div>
+                </div>
+              </div>
+
+              <p style="color:#374151; font-size:0.88rem; line-height:1.7; margin-top:1rem;">That's it. No learning, no weights, no neurons. Just a big table of "what usually comes next." It's fast and sometimes produces surprisingly readable text — but it has no understanding whatsoever.</p>
+            </div>
+
+            <!-- Why Markov chains fall short -->
+            <h4 style="font-size:0.95rem; margin:1.5rem 0 0.8rem; color:#1a202c;">Why this breaks down</h4>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem;">
+              <div style="background:rgba(239,68,68,0.05); border-left:3px solid #ef4444; padding:1rem; border-radius:0 8px 8px 0;">
+                <div style="font-weight:700; font-size:0.85rem; color:#ef4444; margin-bottom:0.4rem;">🔴 Markov chain</div>
+                <ul style="font-size:0.85rem; color:#2d3748; line-height:1.7; padding-left:1.2rem; margin:0;">
+                  <li>Can only look back a few characters</li>
+                  <li>No understanding of meaning</li>
+                  <li>"The president of the United ___" → could say anything</li>
+                  <li>Can't maintain a topic across a sentence</li>
+                </ul>
+              </div>
+              <div style="background:rgba(34,197,94,0.05); border-left:3px solid #22c55e; padding:1rem; border-radius:0 8px 8px 0;">
+                <div style="font-weight:700; font-size:0.85rem; color:#22c55e; margin-bottom:0.4rem;">🟢 Neural network (LSTM / Transformer)</div>
+                <ul style="font-size:0.85rem; color:#2d3748; line-height:1.7; padding-left:1.2rem; margin:0;">
+                  <li>Considers the entire context</li>
+                  <li>Learns patterns, grammar, meaning</li>
+                  <li>"The president of the United ___" → "States"</li>
+                  <li>Can stay on topic for paragraphs</li>
+                </ul>
+              </div>
+            </div>
+
+            <p style="color:#2d3748; line-height:1.8;">The jump from Markov chains to neural networks is the jump from "pattern matching" to something closer to "understanding." Both predict the next token — but the neural network builds an internal model of language itself.</p>
           </div>
-          <div class="markov-input-wrap" style="margin-top:1rem;">
-            <input type="text" id="markov-input" class="gen-input" placeholder="Start typing... (e.g. 'To be or')">
+
+          <!-- Part 2: Try the Markov chain -->
+          <div class="train-step">
+            <h3 style="color:var(--accent); margin-bottom:0.5rem;">Try it: Markov chain completion</h3>
+            <p style="color:#374151; font-size:0.9rem; margin-bottom:1rem;">Type below and watch a Markov chain (not a neural network) try to continue your text. Notice how it often starts strong but quickly drifts into nonsense — it has no memory beyond the last few characters.</p>
+
+            <div class="markov-controls">
+              <select id="markov-preset" class="add-cat-select" style="min-width:160px;">
+                <option value="shakespeare">📜 Shakespeare</option>
+                <option value="recipes">🍳 Recipes</option>
+                <option value="python">🐍 Python</option>
+              </select>
+            </div>
+            <div class="markov-input-wrap" style="margin-top:1rem;">
+              <input type="text" id="markov-input" class="gen-input" placeholder="Start typing... (e.g. 'To be or')">
+            </div>
+
+            <!-- Chain visualization -->
+            <div id="markov-chain-viz" style="margin-top:1rem; min-height:40px; display:flex; flex-wrap:wrap; gap:2px; align-items:center;"></div>
+
+            <div class="markov-output" id="markov-output" style="margin-top:0.8rem; min-height:60px; padding:1rem; background:rgba(255,255,255,0.4); border-radius:var(--radius-sm); font-size:0.95rem; line-height:1.7; white-space:pre-wrap;"></div>
+
+            <p style="color:#94a3b8; font-size:0.8rem; margin-top:0.8rem;">Compare this to the LSTM output above — same training data, very different quality. That's the power of neural networks.</p>
           </div>
-          <div class="markov-output" id="markov-output" style="margin-top:1rem; min-height:60px; padding:1rem; background:rgba(255,255,255,0.4); border-radius:var(--radius-sm); font-size:0.95rem; line-height:1.7; white-space:pre-wrap;"></div>
+
         </div>
       </div>
     </div>

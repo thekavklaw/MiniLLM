@@ -320,20 +320,63 @@
   const markovInput = document.getElementById('markov-input');
   const markovOutput = document.getElementById('markov-output');
   const markovPreset = document.getElementById('markov-preset');
+  const chainViz = document.getElementById('markov-chain-viz');
   let markovTimer = null;
+
+  function renderChainViz(seed, generated) {
+    if (!chainViz) return;
+    chainViz.innerHTML = '';
+    // Show the chain: each character as a small block, seed in dim, generated colored by confidence
+    const allChars = seed + generated;
+    const seedLen = seed.length;
+    // Only show last 60 chars to keep it manageable
+    const start = Math.max(0, allChars.length - 80);
+    const visible = allChars.slice(start);
+    const seedVisible = Math.max(0, seedLen - start);
+
+    for (let i = 0; i < visible.length; i++) {
+      const ch = visible[i];
+      const isSeed = i < seedVisible;
+      const span = document.createElement('span');
+      span.textContent = ch === ' ' ? '·' : ch === '\n' ? '↵' : ch === '\r' ? '' : ch;
+      if (!span.textContent) continue;
+      span.style.cssText = `
+        display:inline-block; padding:2px 3px; font-family:monospace; font-size:0.75rem; 
+        border-radius:3px; line-height:1.4;
+        ${isSeed 
+          ? 'background:rgba(0,0,0,0.05); color:#94a3b8;' 
+          : `background:rgba(139,92,246,${0.08 + Math.random()*0.15}); color:var(--accent); font-weight:500;`
+        }
+      `;
+      chainViz.appendChild(span);
+
+      // Add arrow every 5 generated chars
+      if (!isSeed && (i - seedVisible) > 0 && (i - seedVisible) % 8 === 0) {
+        const arrow = document.createElement('span');
+        arrow.textContent = '→';
+        arrow.style.cssText = 'color:#d4d4d8; font-size:0.6rem; margin:0 1px;';
+        chainViz.appendChild(arrow);
+      }
+    }
+  }
 
   if (markovInput) {
     markovInput.addEventListener('input', () => {
       clearTimeout(markovTimer);
       markovTimer = setTimeout(async () => {
         const text = markovInput.value;
-        if (text.length < 3) { if (markovOutput) markovOutput.textContent = ''; return; }
+        if (text.length < 3) { 
+          if (markovOutput) markovOutput.textContent = ''; 
+          if (chainViz) chainViz.innerHTML = '';
+          return; 
+        }
         const preset = markovPreset ? markovPreset.value : 'shakespeare';
         try {
           const resp = await fetch(`/api/complete?text=${encodeURIComponent(text)}&preset=${preset}&length=150`);
           if (!resp.ok) return;
           const data = await resp.json();
           if (markovOutput) markovOutput.innerHTML = `<span class="seed-text">${escapeHtml(text)}</span><span class="gen-text">${escapeHtml(data.text)}</span>`;
+          renderChainViz(text, data.text);
         } catch (e) { /* ignore */ }
       }, 400);
     });
