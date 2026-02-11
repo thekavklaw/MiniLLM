@@ -17,7 +17,7 @@
     <div class="chapter-header fade-in-up">
       <div class="chapter-number">Chapter 8</div>
       <h1>From Tiny to GPT</h1>
-      <p>Our playground network had ~50 parameters. GPT-4 has over a trillion. Let's visualize what scale really means.</p>
+      <p>Our playground network had ~50 parameters. The latest models — Claude Opus 4.6, GPT-5, Codex 5.3 — have trillions. Let's visualize what scale really means.</p>
     </div>
 
     <!-- ========== INTRO ========== -->
@@ -104,7 +104,7 @@
       </p>
 
       <div class="interactive-area">
-        <canvas id="scale-canvas" width="900" height="400" style="width:100%; max-width:900px;"></canvas>
+        <canvas id="scale-canvas" width="900" height="450" style="width:100%; max-width:900px;"></canvas>
       </div>
 
       <p>
@@ -115,8 +115,7 @@
       </p>
 
       <p>
-        Let's put <strong>1.8 trillion parameters</strong> into perspective, because that number is so
-        large it's almost meaningless on its own:
+        Let's put these numbers into perspective. The latest frontier models — Claude Opus 4.6 and GPT-5/Codex 5.3 — are estimated at <strong>2–3.5 trillion parameters</strong> (exact counts aren't published, but industry estimates converge around this range). That's so large it's almost meaningless on its own:
       </p>
 
       <ul>
@@ -517,9 +516,11 @@
       { name: 'Our Playground', params: 50, color: '#22c55e' },
       { name: 'MNIST Network', params: 100000, color: '#3b82f6' },
       { name: 'GPT-2 Small', params: 124e6, color: '#8b5cf6' },
-      { name: 'GPT-2 Large', params: 774e6, color: '#a78bfa' },
       { name: 'GPT-3', params: 175e9, color: '#7c3aed' },
       { name: 'GPT-4', params: 1.8e12, color: '#f97316' },
+      { name: 'Claude Opus 4.5', params: 2e12, color: '#d946ef' },
+      { name: 'GPT-5 / Codex 5.3', params: 3.5e12, color: '#ef4444' },
+      { name: 'Claude Opus 4.6', params: 2.5e12, color: '#ec4899' },
     ];
 
     const sc = $('scale-canvas'), sctx = sc.getContext('2d');
@@ -530,10 +531,10 @@
 
       const maxLog = Math.log10(models[models.length - 1].params);
       const minLog = Math.log10(models[0].params);
-      const barH = 36;
-      const gap = 14;
-      const startY = 30;
-      const labelW = 120;
+      const barH = 30;
+      const gap = 10;
+      const startY = 25;
+      const labelW = 140;
       const barAreaW = w - labelW - 100;
 
       for (let i = 0; i < models.length; i++) {
