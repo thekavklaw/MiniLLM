@@ -296,6 +296,9 @@ setInterval(() => {
 app.post('/api/train-custom', async (req, res) => {
   const ip = req.headers['x-forwarded-for'] || req.ip;
   
+  const turnstileOk = await verifyTurnstile(req.body.turnstileToken);
+  if (!turnstileOk) return res.status(403).json({ error: 'Verification failed. Please complete the captcha and try again.' });
+
   if (!checkRateLimit(ip, 3, 300000)) {
     return res.status(429).json({ error: 'Rate limited. Max 3 training requests per 5 minutes.' });
   }

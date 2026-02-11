@@ -2,7 +2,18 @@
 (function() {
   'use strict';
 
-  // No Turnstile — server-side rate limits handle abuse prevention
+  // Turnstile token helper — widget rendered inline, callback defined in index.html
+  function getTurnstileToken() {
+    return new Promise((resolve) => {
+      if (window._turnstileToken) { resolve(window._turnstileToken); return; }
+      let elapsed = 0;
+      const interval = setInterval(() => {
+        elapsed += 200;
+        if (window._turnstileToken) { clearInterval(interval); resolve(window._turnstileToken); }
+        else if (elapsed >= 10000) { clearInterval(interval); resolve(null); }
+      }, 200);
+    });
+  }
 
   // Collapsible sections (landing page doesn't load nav.js)
   document.querySelectorAll('.collapsible-header').forEach(header => {
@@ -107,12 +118,15 @@
           return;
         }
         trainBtn.disabled = true;
-        trainBtn.textContent = '🧠 Training your model (~15-30s)...';
+        trainBtn.textContent = '🔒 Verifying...';
         try {
+          const tsToken = await getTurnstileToken();
+          if (!tsToken) { alert('Please complete the verification above first.'); resetModel(); return; }
+          trainBtn.textContent = '🧠 Training your model (~15-30s)...';
           const resp = await fetch('/api/train-custom', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: customText })
+            body: JSON.stringify({ text: customText, turnstileToken: tsToken })
           });
           const data = await resp.json();
           if (!resp.ok) { alert(data.error || 'Training failed'); resetModel(); return; }
@@ -168,9 +182,12 @@
       }
 
       trainBtn.disabled = true;
-      trainBtn.textContent = '🧠 Loading neural network...';
+      trainBtn.textContent = '🔒 Verifying...';
 
       try {
+        const tsToken = await getTurnstileToken();
+        if (!tsToken) { alert('Please complete the verification above first.'); resetModel(); return; }
+        trainBtn.textContent = '🧠 Loading neural network...';
 
         const infoResp = await fetch('/api/model-info');
         const info = await infoResp.json();
