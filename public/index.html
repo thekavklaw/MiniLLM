@@ -4,61 +4,259 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MiniLLM — Learn How AI Thinks</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+  <meta name="description" content="Interactively learn how neural networks and LLMs work. Build and train your own mini language model in the browser.">
+  <meta property="og:title" content="MiniLLM — Learn How AI Thinks">
+  <meta property="og:description" content="From 'what is a neuron?' to training your own language model. All in the browser.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://mini.llm.kaveenk.com">
 </head>
-<body data-page="home">
+<body>
+  <!-- Floating chapter nav (appears after scrolling) -->
+  <nav class="chapter-rail" id="chapter-rail">
+    <a href="#hero" class="rail-dot active" data-tooltip="Start">●</a>
+    <a href="/chapters/1-neuron.html" class="rail-dot" data-tooltip="① Neuron">●</a>
+    <a href="/chapters/2-learning.html" class="rail-dot" data-tooltip="② Learning">●</a>
+    <a href="/chapters/3-layers.html" class="rail-dot" data-tooltip="③ Layers">●</a>
+    <a href="/chapters/4-playground.html" class="rail-dot" data-tooltip="④ Playground">●</a>
+    <a href="/chapters/5-words.html" class="rail-dot" data-tooltip="⑤ Words">●</a>
+    <a href="/chapters/6-attention.html" class="rail-dot" data-tooltip="⑥ Attention">●</a>
+    <a href="/chapters/7-transformer.html" class="rail-dot" data-tooltip="⑦ Transformer">●</a>
+    <a href="/chapters/8-scale.html" class="rail-dot" data-tooltip="⑧ Scale">●</a>
+    <a href="#train" class="rail-dot" data-tooltip="Train Your Own">●</a>
+  </nav>
 
-  <div class="hero">
-    <h1 class="fade-in-up">Learn How AI Thinks</h1>
-    <p class="fade-in-up delay-1">An interactive journey from "What is a neuron?" to "How does ChatGPT work?" — no math degree required.</p>
-    <div class="fade-in-up delay-2">
-      <a href="/chapters/1-neuron.html" class="btn btn-primary" style="font-size:1.1rem;padding:16px 36px;">Start Learning →</a>
-    </div>
-    <div class="fade-in-up delay-3" style="margin-top:16px;">
-      <span style="font-size:0.85rem;color:var(--text-lighter);">8 interactive chapters · Build real neural networks · Free & open source</span>
-    </div>
-  </div>
+  <!-- Particle background -->
+  <canvas id="particles" class="particles-canvas"></canvas>
 
-  <div class="chapters-grid" id="chapters">
-    <!-- Filled by JS -->
-  </div>
+  <!-- ===== HERO: Single Neuron ===== -->
+  <section class="story-section hero-section" id="hero">
+    <div class="story-content">
+      <canvas id="hero-neuron" width="400" height="400"></canvas>
+      <h1 class="hero-title fade-in">This is a neuron.</h1>
+      <p class="hero-sub fade-in delay-1">The smallest building block of artificial intelligence.</p>
+      <div class="scroll-hint fade-in delay-2">
+        <span>scroll to explore</span>
+        <div class="scroll-arrow">↓</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SECTION: Inputs ===== -->
+  <section class="story-section" id="s-inputs">
+    <div class="story-content story-split">
+      <div class="story-viz">
+        <canvas id="input-neuron" width="500" height="350"></canvas>
+      </div>
+      <div class="story-text">
+        <h2 class="reveal">It takes numbers in.</h2>
+        <p class="reveal delay-1">Every piece of information — a pixel, a word, a sound wave — gets converted to a number. The neuron receives these numbers as inputs.</p>
+        <div class="interactive-widget reveal delay-2">
+          <label>Input 1: <input type="range" id="input1" min="0" max="10" step="0.1" value="3"> <span id="input1-val">3.0</span></label>
+          <label>Input 2: <input type="range" id="input2" min="0" max="10" step="0.1" value="7"> <span id="input2-val">7.0</span></label>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SECTION: Weights ===== -->
+  <section class="story-section" id="s-weights">
+    <div class="story-content story-split">
+      <div class="story-text">
+        <h2 class="reveal">It multiplies by weights.</h2>
+        <p class="reveal delay-1">Weights are how the neuron decides what matters. A high weight means "pay attention to this input." A low weight means "ignore it."</p>
+        <div class="interactive-widget reveal delay-2">
+          <label>Weight 1: <input type="range" id="weight1" min="-2" max="2" step="0.1" value="0.5"> <span id="weight1-val">0.5</span></label>
+          <label>Weight 2: <input type="range" id="weight2" min="-2" max="2" step="0.1" value="-0.3"> <span id="weight2-val">-0.3</span></label>
+          <label>Bias: <input type="range" id="bias" min="-5" max="5" step="0.1" value="0"> <span id="bias-val">0.0</span></label>
+        </div>
+      </div>
+      <div class="story-viz">
+        <canvas id="weight-neuron" width="500" height="350"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SECTION: Activation ===== -->
+  <section class="story-section" id="s-activation">
+    <div class="story-content">
+      <h2 class="reveal">And decides.</h2>
+      <p class="reveal delay-1">The neuron squishes its answer through an <em>activation function</em> — turning any number into a value between 0 and 1. Like a confidence score.</p>
+      <div class="activation-display reveal delay-2">
+        <div class="computation-flow">
+          <div class="comp-box">
+            <div class="comp-label">Weighted Sum</div>
+            <div class="comp-value" id="weighted-sum">0.0</div>
+          </div>
+          <div class="comp-arrow">→</div>
+          <div class="comp-box">
+            <div class="comp-label">σ (sigmoid)</div>
+            <canvas id="sigmoid-curve" width="200" height="120"></canvas>
+          </div>
+          <div class="comp-arrow">→</div>
+          <div class="comp-box highlight">
+            <div class="comp-label">Output</div>
+            <div class="comp-value big" id="neuron-output">0.5</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SECTION: Network Reveal ===== -->
+  <section class="story-section" id="s-network">
+    <div class="story-content">
+      <h2 class="reveal">One neuron is simple.</h2>
+      <p class="reveal delay-1">But stack millions together, and they can learn to read, write, create art, and have conversations.</p>
+      <canvas id="network-reveal" width="800" height="400" class="reveal delay-2"></canvas>
+      <p class="reveal delay-3" style="margin-top:1.5rem; opacity:0.7; font-size:0.95rem;">Every connection you see is a weight. Every dot is a neuron. ChatGPT has 1.8 trillion of these.</p>
+    </div>
+  </section>
+
+  <!-- ===== SECTION: Dive Deeper ===== -->
+  <section class="story-section" id="s-chapters">
+    <div class="story-content">
+      <h2 class="reveal">Go deeper.</h2>
+      <p class="reveal delay-1" style="max-width:600px; margin:0 auto 2rem;">Eight interactive chapters. From a single neuron to understanding how GPT works.</p>
+      <div class="chapter-grid reveal delay-2">
+        <a href="/chapters/1-neuron.html" class="chapter-card">
+          <span class="ch-num">01</span>
+          <span class="ch-title">What IS a Neural Network?</span>
+          <span class="ch-desc">Build your first neuron</span>
+        </a>
+        <a href="/chapters/2-learning.html" class="chapter-card">
+          <span class="ch-num">02</span>
+          <span class="ch-title">Neurons That Learn</span>
+          <span class="ch-desc">Watch gradient descent in action</span>
+        </a>
+        <a href="/chapters/3-layers.html" class="chapter-card">
+          <span class="ch-num">03</span>
+          <span class="ch-title">Layers of Thinking</span>
+          <span class="ch-desc">Solve problems one neuron can't</span>
+        </a>
+        <a href="/chapters/4-playground.html" class="chapter-card">
+          <span class="ch-num">04</span>
+          <span class="ch-title">The Playground</span>
+          <span class="ch-desc">Full neural network sandbox</span>
+        </a>
+        <a href="/chapters/5-words.html" class="chapter-card">
+          <span class="ch-num">05</span>
+          <span class="ch-title">How Computers Read</span>
+          <span class="ch-desc">Tokens, embeddings, vectors</span>
+        </a>
+        <a href="/chapters/6-attention.html" class="chapter-card">
+          <span class="ch-num">06</span>
+          <span class="ch-title">Paying Attention</span>
+          <span class="ch-desc">The key insight behind ChatGPT</span>
+        </a>
+        <a href="/chapters/7-transformer.html" class="chapter-card">
+          <span class="ch-num">07</span>
+          <span class="ch-title">The Transformer</span>
+          <span class="ch-desc">Putting it all together</span>
+        </a>
+        <a href="/chapters/8-scale.html" class="chapter-card">
+          <span class="ch-num">08</span>
+          <span class="ch-title">From Tiny to GPT</span>
+          <span class="ch-desc">How small becomes powerful</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== TRAIN YOUR OWN ===== -->
+  <section class="story-section train-section" id="train">
+    <div class="story-content">
+      <h2 class="reveal">Train your own.</h2>
+      <p class="reveal delay-1" style="max-width:600px; margin:0 auto 2rem;">Pick some text. Train a real language model. Watch it learn to write like your data — all in your browser.</p>
+      
+      <div class="trainer-container reveal delay-2" id="trainer">
+        <!-- Step 1: Choose data -->
+        <div class="train-step" id="train-step-1">
+          <h3>① Choose training data</h3>
+          <div class="preset-grid">
+            <button class="preset-btn active" data-preset="shakespeare">📜 Shakespeare</button>
+            <button class="preset-btn" data-preset="recipes">🍳 Recipes</button>
+            <button class="preset-btn" data-preset="python">🐍 Python Code</button>
+            <button class="preset-btn" data-preset="custom">✏️ Your Own Text</button>
+          </div>
+          <textarea id="custom-text" class="custom-text-area" placeholder="Paste at least 1000 characters of text here..." style="display:none;"></textarea>
+          <div class="data-preview" id="data-preview">
+            <div class="preview-label">Preview:</div>
+            <div class="preview-text" id="preview-text"></div>
+          </div>
+        </div>
+
+        <!-- Step 2: Configure -->
+        <div class="train-step" id="train-step-2">
+          <h3>② Configure</h3>
+          <div class="config-grid">
+            <div class="config-item">
+              <label>Model Size</label>
+              <select id="model-size">
+                <option value="tiny">Tiny (~30s)</option>
+                <option value="small" selected>Small (~60s)</option>
+                <option value="medium">Medium (~2min)</option>
+              </select>
+            </div>
+            <div class="config-item">
+              <label>Temperature</label>
+              <input type="range" id="temperature" min="0.1" max="2" step="0.1" value="0.8">
+              <span id="temp-val">0.8</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Train! -->
+        <div class="train-step" id="train-step-3">
+          <button class="train-btn" id="train-btn">🚀 Start Training</button>
+          <div class="training-dashboard" id="training-dashboard" style="display:none;">
+            <div class="dash-row">
+              <div class="dash-card">
+                <div class="dash-label">Loss</div>
+                <div class="dash-value" id="dash-loss">—</div>
+                <canvas id="loss-chart" width="280" height="100"></canvas>
+              </div>
+              <div class="dash-card">
+                <div class="dash-label">Epoch</div>
+                <div class="dash-value" id="dash-epoch">0 / 0</div>
+                <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+              </div>
+            </div>
+            <div class="sample-output">
+              <div class="sample-label">Model is writing:</div>
+              <div class="sample-text" id="sample-text">Waiting for first epoch...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4: Play -->
+        <div class="train-step" id="train-step-4" style="display:none;">
+          <h3>Your model is ready! 🎉</h3>
+          <div class="generate-area">
+            <input type="text" id="gen-prompt" class="gen-input" placeholder="Type a prompt and press Enter...">
+            <div class="gen-output" id="gen-output"></div>
+          </div>
+          <div class="share-row">
+            <button class="share-btn" id="share-btn">📤 Share Model</button>
+            <button class="download-btn" id="download-btn">💾 Download</button>
+          </div>
+          <div class="share-link" id="share-link" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>Built by <a href="https://kaveenk.com" target="_blank">Kaveen</a> · <a href="https://github.com/thekavklaw/MiniLLM" target="_blank">GitHub</a></p>
+  </footer>
 
   <script src="/js/particles.js"></script>
-  <script src="/js/nav.js"></script>
-  <script>
-    // Init particles
-    const ps = new ParticleSystem();
-    ps.start();
-
-    // Render chapter cards
-    const grid = document.getElementById('chapters');
-    const descriptions = [
-      'Meet the building block of AI — a single neuron. Drag sliders, watch it compute.',
-      'Watch a neuron learn from its mistakes with gradient descent, visualized.',
-      'Stack neurons into layers and watch them solve problems a single neuron can\'t.',
-      'Build any network you want. Choose datasets, tune parameters, watch it train.',
-      'See how computers turn words into numbers that capture meaning.',
-      'Discover the breakthrough idea that makes transformers work: attention.',
-      'Walk through an entire transformer processing text, step by step.',
-      'From our tiny network to GPT-4: see what scale really means.'
-    ];
-
-    Nav.chapters.forEach((ch, i) => {
-      const completed = Nav.isCompleted(ch.id);
-      const card = document.createElement('a');
-      card.href = ch.path;
-      card.className = 'chapter-card fade-in-up';
-      card.style.animationDelay = `${0.1 + i * 0.08}s`;
-      card.style.opacity = '0';
-      card.innerHTML = `
-        <div class="chapter-card-icon">${ch.icon}</div>
-        <div class="chapter-card-num">Chapter ${ch.id}</div>
-        <h3>${ch.title}</h3>
-        <p>${descriptions[i]}</p>
-        ${completed ? '<div class="card-status">✓ Completed</div>' : ''}
-      `;
-      grid.appendChild(card);
-    });
-  </script>
+  <script src="/js/story.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+  <script src="/js/trainer.js"></script>
 </body>
 </html>

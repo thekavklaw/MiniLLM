@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shared Model — MiniLLM</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+</head>
+<body>
+  <canvas id="particles" class="particles-canvas"></canvas>
+  <div class="chapter-body" style="text-align:center; max-width:600px;">
+    <h1 style="margin-bottom:0.5rem;">🧠 Shared Model</h1>
+    <p id="model-info" style="color:var(--text-dim); margin-bottom:2rem;">Loading...</p>
+
+    <div style="background:var(--card-bg); backdrop-filter:blur(12px); border:1px solid var(--card-border); border-radius:var(--radius); padding:1.5rem; text-align:left;">
+      <input type="text" id="gen-prompt" class="gen-input" placeholder="Type a prompt and press Enter...">
+      <div class="gen-output" id="gen-output" style="margin-top:1rem; min-height:100px;">Press Enter to generate text...</div>
+    </div>
+
+    <p style="margin-top:2rem;"><a href="/" style="color:var(--accent);">← Train your own model</a></p>
+  </div>
+
+  <script src="/js/particles.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+  <script>
+  (async function() {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    if (!id) { document.getElementById('model-info').textContent = 'No model ID provided.'; return; }
+
+    try {
+      const resp = await fetch('/api/models/' + id);
+      if (!resp.ok) throw new Error('Not found');
+      const data = await resp.json();
+
+      document.getElementById('model-info').textContent =
+        'Trained on: ' + (data.preset || 'custom') + ' · Created: ' + new Date(data.createdAt).toLocaleDateString();
+
+      const charToIdx = data.vocab;
+      const idxToChar = {};
+      Object.entries(charToIdx).forEach(([c, i]) => { idxToChar[i] = c; });
+      const vocabSize = Object.keys(charToIdx).length;
+      const seqLength = data.seqLength || 40;
+
+      // Rebuild model from topology + weights
+      const weightData = new Uint8Array(data.weightData).buffer;
+      const model = await tf.loadLayersModel(tf.io.fromMemory(data.topology, data.weightSpecs, weightData));
+
+      function generateText(prompt, length, temperature) {
+        let input = prompt.slice(-seqLength).padStart(seqLength, ' ');
+        let result = '';
+        for (let i = 0; i < length; i++) {
+          const xArr = [];
+          for (let j = 0; j < seqLength; j++) {
+            const oh = new Array(vocabSize).fill(0);
+            const idx = charToIdx[input[j]];
+            if (idx !== undefined) oh[idx] = 1;
+            xArr.push(oh);
+          }
+          const pred = model.predict(tf.tensor3d([xArr]));
+          const logits = pred.dataSync();
+          const scaled = logits.map(l => Math.exp(Math.log(Math.max(l, 1e-8)) / temperature));
+          const sum = scaled.reduce((a, b) => a + b, 0);
+          const probs = scaled.map(s => s / sum);
+          let r = Math.random();
+          let idx = 0;
+          for (let j = 0; j < probs.length; j++) { r -= probs[j]; if (r <= 0) { idx = j; break; } }
+          const char = idxToChar[idx] || ' ';
+          result += char;
+          input = input.slice(1) + char;
+          pred.dispose();
+        }
+        return result;
+      }
+
+      document.getElementById('gen-prompt').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          const prompt = e.target.value;
+          const output = generateText(prompt, 200, 0.8);
+          const el = document.getElementById('gen-output');
+          el.textContent = '';
+          let i = 0;
+          const type = () => { if (i < output.length) { el.textContent += output[i]; i++; setTimeout(type, 15); } };
+          type();
+        }
+      });
+
+    } catch (e) {
+      document.getElementById('model-info').textContent = 'Model not found or failed to load.';
+      console.error(e);
+    }
+  })();
+  </script>
+</body>
+</html>

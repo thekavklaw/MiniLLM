@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/thekavklaw/MiniLLM#readme",
   "dependencies": {
+    "better-sqlite3": "^12.6.2",
     "express": "^5.2.1"
   }
 }
