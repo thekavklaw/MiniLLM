@@ -597,9 +597,25 @@ h2 {
 
 .chapter-content p {
   font-size: 1.02rem;
-  color: var(--text-dim);
+  color: #2d3748;
   line-height: 1.8;
   margin-bottom: 1rem;
+}
+
+.chapter-content ul, .chapter-content ol {
+  padding-left: 2rem;
+  margin-bottom: 1rem;
+  color: #2d3748;
+}
+
+.chapter-content li {
+  line-height: 1.7;
+  margin-bottom: 0.4rem;
+  font-size: 1rem;
+}
+
+.chapter-content strong {
+  color: #1a202c;
 }
 
 .chapter-content .section {
@@ -704,11 +720,11 @@ h2 {
   border-radius: var(--radius-sm);
   border-left: 3px solid var(--accent);
   font-size: 0.9rem;
-  color: var(--text-dim);
+  color: #374151;
   line-height: 1.7;
 }
 
-.narration strong { color: var(--text); }
+.narration strong { color: #1a202c; }
 
 /* Buttons */
 .btn {
