@@ -211,6 +211,7 @@
 
         <!-- Step 3: Train! -->
         <div class="train-step" id="train-step-3">
+          <div id="turnstile-container" class="cf-turnstile" data-sitekey="0x4AAAAAACZGxpcf0vhl9Oes" data-callback="onTurnstileSuccess" style="margin-bottom:1rem; display:flex; justify-content:center;"></div>
           <button class="train-btn" id="train-btn">⚡ Load Neural Network</button>
           <div class="training-dashboard" id="training-dashboard" style="display:none;"></div>
           <div id="sample-text" style="display:none;"></div>
@@ -338,26 +339,9 @@
     <p>Built by <a href="https://kaveenk.com" target="_blank">Kaveen</a> · <a href="https://github.com/thekavklaw/MiniLLM" target="_blank">GitHub</a></p>
   </footer>
 
-  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad" async defer></script>
-  <div id="turnstile-container" style="position:fixed; bottom:10px; right:10px; z-index:9999;"></div>
-  <script>
-    window._turnstileReady = false;
-    window._turnstileToken = null;
-    window._turnstileResolvers = [];
-    function onTurnstileLoad() {
-      turnstile.render('#turnstile-container', {
-        sitekey: '0x4AAAAAACZGxpcf0vhl9Oes',
-        callback: function(token) {
-          window._turnstileToken = token;
-          window._turnstileReady = true;
-          window._turnstileResolvers.forEach(function(r) { r(token); });
-          window._turnstileResolvers = [];
-        }
-      });
-    }
-  </script>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer data-cfasync="false"></script>
   <script src="/js/particles.js?v=2"></script>
   <script src="/js/story.js?v=2"></script>
-  <script src="/js/trainer.js?v=3"></script>
+  <script src="/js/trainer.js?v=4"></script>
 </body>
 </html>

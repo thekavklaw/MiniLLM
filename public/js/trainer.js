@@ -2,19 +2,20 @@
 (function() {
   'use strict';
 
-  // Turnstile helper — uses pre-rendered widget from index.html
+  // Turnstile helper — widget is rendered inline via cf-turnstile class
+  window._turnstileToken = null;
+  window.onTurnstileSuccess = function(token) { window._turnstileToken = token; };
+
   function getTurnstileToken() {
     return new Promise((resolve) => {
-      // Already have a token
-      if (window._turnstileToken) {
-        resolve(window._turnstileToken);
-        return;
-      }
-      // Wait for it (up to 15s)
-      if (window._turnstileResolvers) {
-        window._turnstileResolvers.push(resolve);
-      }
-      setTimeout(() => resolve(null), 15000);
+      if (window._turnstileToken) { resolve(window._turnstileToken); return; }
+      // Poll for up to 10s
+      let elapsed = 0;
+      const interval = setInterval(() => {
+        elapsed += 200;
+        if (window._turnstileToken) { clearInterval(interval); resolve(window._turnstileToken); }
+        else if (elapsed >= 10000) { clearInterval(interval); resolve(null); }
+      }, 200);
     });
   }
 
