@@ -20,21 +20,20 @@ db.exec(`
   )
 `);
 
-// Rate limiting (in-memory)
+// Rate limiting
 const rateLimits = new Map();
 function checkRateLimit(ip, maxReqs, windowMs) {
   const now = Date.now();
-  const key = `${ip}`;
-  const entry = rateLimits.get(key) || { count: 0, resetAt: now + windowMs };
+  const entry = rateLimits.get(ip) || { count: 0, resetAt: now + windowMs };
   if (now > entry.resetAt) { entry.count = 0; entry.resetAt = now + windowMs; }
   entry.count++;
-  rateLimits.set(key, entry);
+  rateLimits.set(ip, entry);
   return entry.count <= maxReqs;
 }
 
-// ===== Markov Chain Builder =====
-const markovChains = {};
+// ===== Markov Chain (order-4 character level) =====
 const MARKOV_ORDER = 4;
+const markovChains = {};
 
 function buildMarkovChain(text, order) {
   const chain = {};
@@ -48,10 +47,8 @@ function buildMarkovChain(text, order) {
 }
 
 function generateFromChain(chain, seed, length, order) {
-  // Find best starting key from seed
   let current = seed.slice(-order);
   if (!chain[current]) {
-    // Try to find a key that starts with end of seed
     for (let len = order - 1; len >= 1; len--) {
       const partial = seed.slice(-len);
       const match = Object.keys(chain).find(k => k.startsWith(partial));
@@ -62,12 +59,10 @@ function generateFromChain(chain, seed, length, order) {
       current = keys[Math.floor(Math.random() * keys.length)];
     }
   }
-
   let result = '';
   for (let i = 0; i < length; i++) {
     const options = chain[current];
     if (!options) break;
-    // Weighted random selection
     const entries = Object.entries(options);
     const total = entries.reduce((s, [, c]) => s + c, 0);
     let r = Math.random() * total;
@@ -82,13 +77,13 @@ function generateFromChain(chain, seed, length, order) {
   return result;
 }
 
-// Load preset data and build chains at startup
+// Build chains at startup
 const dataDir = path.join(__dirname, 'public', 'data');
 ['shakespeare', 'recipes', 'python'].forEach(name => {
   try {
     const text = fs.readFileSync(path.join(dataDir, `${name}.txt`), 'utf-8');
     markovChains[name] = buildMarkovChain(text, MARKOV_ORDER);
-    console.log(`Markov chain built for ${name}: ${Object.keys(markovChains[name]).length} states`);
+    console.log(`Markov chain: ${name} (${Object.keys(markovChains[name]).length} states)`);
   } catch (e) {
     console.error(`Failed to build chain for ${name}:`, e.message);
   }
@@ -103,22 +98,18 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', name: 'MiniLLM', version: '3.0.0' });
 });
 
-// ===== Markov Completion Endpoint =====
+// Markov completion
 app.get('/api/complete', (req, res) => {
   const ip = req.headers['x-forwarded-for'] || req.ip;
   if (!checkRateLimit(ip, 10, 60000)) {
     return res.status(429).json({ error: 'Rate limited. Max 10 requests per minute.' });
   }
-
   const { text, preset, length } = req.query;
-  if (!text || !preset) return res.status(400).json({ error: 'Missing text or preset parameter.' });
-
+  if (!text || !preset) return res.status(400).json({ error: 'Missing text or preset.' });
   const chain = markovChains[preset];
   if (!chain) return res.status(404).json({ error: `Unknown preset: ${preset}` });
-
   const maxLen = Math.min(parseInt(length) || 100, 200);
-  const generated = generateFromChain(chain, text, maxLen, MARKOV_ORDER);
-  res.json({ text: generated });
+  res.json({ text: generateFromChain(chain, text, maxLen, MARKOV_ORDER) });
 });
 
 // Save model
@@ -127,13 +118,11 @@ app.post('/api/models/save', (req, res) => {
   if (!checkRateLimit(ip, 5, 3600000)) {
     return res.status(429).json({ error: 'Rate limit exceeded. Max 5 saves per hour.' });
   }
-
   const data = JSON.stringify(req.body);
   const sizeBytes = Buffer.byteLength(data);
   if (sizeBytes > 5 * 1024 * 1024) {
     return res.status(413).json({ error: 'Model too large. Max 5MB.' });
   }
-
   const id = crypto.randomBytes(8).toString('hex');
   try {
     db.prepare('INSERT INTO models (id, data, preset, ip, size_bytes) VALUES (?, ?, ?, ?, ?)')
@@ -159,6 +148,4 @@ app.get('/api/models/:id/info', (req, res) => {
   res.json({ id: req.params.id, preset: row.preset, createdAt: row.created_at, sizeBytes: row.size_bytes });
 });
 
-app.listen(PORT, () => {
-  console.log(`MiniLLM running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`MiniLLM running on port ${PORT}`));
