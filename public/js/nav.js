@@ -83,15 +83,25 @@ if (typeof window !== 'undefined') {
   });
 }
 
-// Collapsible sections
-document.addEventListener('DOMContentLoaded', () => {
+// Collapsible sections (runs immediately + on DOMContentLoaded for safety)
+function initCollapsibles() {
   document.querySelectorAll('.collapsible-header').forEach(header => {
+    if (header._collapsibleBound) return;
+    header._collapsibleBound = true;
     header.addEventListener('click', () => {
       header.classList.toggle('open');
-      const body = header.nextElementSibling;
-      if (body && body.classList.contains('collapsible-body')) {
-        body.classList.toggle('open');
+      // Find body: next sibling, or next element sibling
+      let body = header.nextElementSibling;
+      if (!body || !body.classList.contains('collapsible-body')) {
+        body = header.parentElement.querySelector('.collapsible-body');
       }
+      if (body) body.classList.toggle('open');
     });
   });
-});
+}
+initCollapsibles();
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initCollapsibles);
+} else {
+  setTimeout(initCollapsibles, 100);
+}
