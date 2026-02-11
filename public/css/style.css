@@ -447,7 +447,7 @@ h2 {
   padding: 1rem;
 }
 .sample-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); margin-bottom: 0.5rem; }
-.sample-text { font-family: 'Inter', monospace; font-size: 0.85rem; color: var(--text); line-height: 1.6; min-height: 60px; white-space: pre-wrap; }
+.sample-text { font-family: 'Inter', monospace; font-size: 0.85rem; color: var(--text); line-height: 1.6; min-height: 60px; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; max-width: 100%; overflow-x: hidden; }
 
 /* Generate area */
 .generate-area { margin: 1rem 0; }
@@ -472,6 +472,10 @@ h2 {
   line-height: 1.7;
   min-height: 80px;
   white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .share-row { display: flex; gap: 0.5rem; margin-top: 1rem; }

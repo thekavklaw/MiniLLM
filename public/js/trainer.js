@@ -150,7 +150,7 @@
           const genResp = await fetch('/api/generate-custom', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: customText.slice(0, 20), temperature: 0.7, length: 150, modelToken: data.modelToken })
+            body: JSON.stringify({ prompt: customText.slice(0, 20), temperature: 0.7, length: 60, modelToken: data.modelToken })
           });
           const genData = await genResp.json();
           const sample = document.getElementById('sample-text');
@@ -203,7 +203,7 @@
         const testResp = await fetch('/api/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: activePreset === 'python' ? 'def ' : 'The ', preset: activePreset, temperature: 0.7, length: 150 })
+          body: JSON.stringify({ prompt: activePreset === 'python' ? 'def ' : 'The ', preset: activePreset, temperature: 0.7, length: 60 })
         });
         const testData = await testResp.json();
         const elapsed = (performance.now() - t0).toFixed(0);
@@ -314,8 +314,8 @@
         const temp = tempSlider ? parseFloat(tempSlider.value) : 0.7;
         const endpoint = (activePreset === 'custom' && isCustomTrained) ? '/api/generate-custom' : '/api/generate';
         const body = (activePreset === 'custom' && isCustomTrained) 
-          ? { prompt, temperature: temp, length: 200, modelToken: customModelToken }
-          : { prompt, preset: activePreset, temperature: temp, length: 200 };
+          ? { prompt, temperature: temp, length: 60, modelToken: customModelToken }
+          : { prompt, preset: activePreset, temperature: temp, length: 60 };
         const resp = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -334,17 +334,22 @@
         const genSpan = document.createElement('span');
         genSpan.className = 'gen-text';
         genOutput.appendChild(genSpan);
+        window._lastGenSeed = prompt;
+        window._lastGenText = '';
 
         let i = 0;
         function type() {
           if (i < data.text.length) {
             genSpan.textContent += data.text[i];
+            window._lastGenText += data.text[i];
             i++;
             setTimeout(type, 25);
           } else {
             isGenerating = false;
             const again = document.getElementById('gen-again-btn');
+            const cont = document.getElementById('gen-continue-btn');
             if (again) again.style.display = 'inline-block';
+            if (cont) cont.style.display = 'inline-block';
           }
         }
         type();
@@ -355,11 +360,56 @@
     });
   }
 
-  // Generate again button
+  // Keep generating button — appends more text
+  const contBtn = document.getElementById('gen-continue-btn');
+  if (contBtn) {
+    contBtn.addEventListener('click', async () => {
+      if (isGenerating || !modelReady || !window._lastGenText) return;
+      isGenerating = true;
+      contBtn.style.display = 'none';
+      const again2 = document.getElementById('gen-again-btn');
+      if (again2) again2.style.display = 'none';
+
+      const continuePrompt = (window._lastGenSeed + window._lastGenText).slice(-20);
+      const temp = tempSlider ? parseFloat(tempSlider.value) : 0.7;
+      const endpoint = (activePreset === 'custom' && isCustomTrained) ? '/api/generate-custom' : '/api/generate';
+      const body = (activePreset === 'custom' && isCustomTrained)
+        ? { prompt: continuePrompt, temperature: temp, length: 60, modelToken: customModelToken }
+        : { prompt: continuePrompt, preset: activePreset, temperature: temp, length: 60 };
+
+      try {
+        const resp = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const data = await resp.json();
+        if (data.text) {
+          const genSpan = genOutput.querySelector('.gen-text');
+          if (genSpan) {
+            let i = 0;
+            function typeMore() {
+              if (i < data.text.length) {
+                genSpan.textContent += data.text[i];
+                window._lastGenText += data.text[i];
+                i++;
+                setTimeout(typeMore, 25);
+              } else {
+                isGenerating = false;
+                contBtn.style.display = 'inline-block';
+                if (again2) again2.style.display = 'inline-block';
+              }
+            }
+            typeMore();
+          }
+        }
+      } catch(e) { isGenerating = false; contBtn.style.display = 'inline-block'; }
+    });
+  }
+
+  // Start over button
   const againBtn = document.getElementById('gen-again-btn');
   if (againBtn) {
     againBtn.addEventListener('click', () => {
       if (genInput && genInput.value) {
+        const cont2 = document.getElementById('gen-continue-btn');
+        if (cont2) cont2.style.display = 'none';
         genInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
       }
     });
