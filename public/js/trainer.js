@@ -2,9 +2,7 @@
 (function() {
   'use strict';
 
-  // Turnstile helper — widget is rendered inline via cf-turnstile class
-  window._turnstileToken = null;
-  window.onTurnstileSuccess = function(token) { window._turnstileToken = token; };
+  // Turnstile helper — widget rendered inline, callback defined in index.html
 
   function getTurnstileToken() {
     return new Promise((resolve) => {
