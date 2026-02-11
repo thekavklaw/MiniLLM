@@ -2,6 +2,20 @@
 (function() {
   'use strict';
 
+  // Collapsible sections (landing page doesn't load nav.js)
+  document.querySelectorAll('.collapsible-header').forEach(header => {
+    if (header._collapsibleBound) return;
+    header._collapsibleBound = true;
+    header.addEventListener('click', () => {
+      header.classList.toggle('open');
+      let body = header.nextElementSibling;
+      if (!body || !body.classList.contains('collapsible-body')) {
+        body = header.parentElement.querySelector('.collapsible-body');
+      }
+      if (body) body.classList.toggle('open');
+    });
+  });
+
   let activePreset = 'shakespeare';
   let isGenerating = false;
   let modelReady = false;
