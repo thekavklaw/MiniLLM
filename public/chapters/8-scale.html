@@ -24,9 +24,46 @@
       <h2>🧩 The Full Picture</h2>
 
       <p>
-        Take a moment to appreciate how far you've come. You've now seen <strong>every building block</strong> that
-        makes up a modern AI language model:
+        You've now seen <strong>every building block</strong> that makes up a modern AI language model:
+        neurons, learning, layers, tokenization, embeddings, attention, and the Transformer. Take a moment
+        to appreciate how far you've come — you understand the same fundamental concepts that AI researchers
+        and engineers work with every day. Now let's zoom out and see how these same building blocks,
+        scaled up <strong>astronomically</strong>, create something that writes poetry, debugs code,
+        explains quantum physics, and holds conversations that feel genuinely intelligent.
       </p>
+
+      <p>
+        Here's what might surprise you: <strong>the magic of modern AI isn't a secret algorithm</strong>.
+        There's no hidden breakthrough, no mysterious invention that only a few geniuses understand.
+        The architecture behind ChatGPT, Claude, Gemini, and every other large language model is
+        the <em>exact same Transformer</em> you learned about in Chapter 7. The same multi-head
+        attention. The same feed-forward layers. The same layer normalization and residual connections.
+        So what changed? What turned a research paper from 2017 into the most transformative technology
+        of the 2020s? One word: <strong>scale</strong>.
+      </p>
+
+      <p>
+        Take the same Transformer architecture. Add more layers — not 6, but 96, or 120. Add more
+        neurons per layer — not 512, but 12,288, or 25,600. Train it on more data — not a few
+        gigabytes of text, but <em>terabytes</em> encompassing most of the public internet. Throw
+        more compute at it — not one GPU for a few hours, but <em>tens of thousands</em> of GPUs
+        running for <em>months</em>. And something remarkable happens: the model doesn't just get
+        incrementally better. It starts to exhibit entirely new capabilities. It begins to reason
+        about problems it's never seen. It understands nuance, humor, and context. It can translate
+        between languages it was barely trained on. It can write working code from a description.
+        Researchers call these <strong>emergent abilities</strong> — capabilities that appear only
+        at sufficient scale, as if the model crosses a threshold from "pattern matcher" to something
+        that genuinely seems to <em>understand</em>.
+      </p>
+
+      <p>
+        This chapter is about that journey from tiny to enormous. We'll look at the numbers — how
+        many parameters, how much data, how much compute — and we'll explore the three-stage training
+        process that turns a raw text predictor into the helpful assistant you interact with every day.
+        By the end, you'll have the complete picture: from a single neuron firing in Chapter 1 to
+        trillion-parameter models that are reshaping the world.
+      </p>
+
       <ul>
         <li><strong>Neurons</strong> (Chapter 1) — the basic unit that takes inputs, multiplies by weights, and fires</li>
         <li><strong>Learning</strong> (Chapter 2) — how a network adjusts its weights to get better at a task</li>
@@ -36,21 +73,33 @@
         <li><strong>Attention</strong> (Chapter 6) — letting words look at each other to understand context</li>
         <li><strong>The Transformer</strong> (Chapter 7) — the architecture that puts it all together</li>
       </ul>
+
       <p>
-        Now let's zoom out and see what happens when you take these same building blocks and scale them up
-        <strong>astronomically</strong>. Because the difference between our tiny playground and GPT-4 isn't
-        a difference in <em>kind</em> — it's a difference in <em>scale</em>. The same neurons, the same attention,
-        the same Transformer architecture. Just… unimaginably more of it. And that scale is what creates something
-        that can write poetry, debug code, explain quantum physics, and hold a conversation that feels genuinely intelligent.
+        Every single one of these building blocks is present inside GPT-4, Claude, and every other
+        modern LLM. The difference between our tiny playground and GPT-4 isn't a difference in
+        <em>kind</em> — it's a difference in <em>scale</em>. The same neurons, the same attention,
+        the same Transformer architecture. Just… unimaginably more of it.
       </p>
     </div>
 
     <!-- ========== PARAMETER SCALE ========== -->
     <div class="section fade-in-up delay-1">
       <h2>📊 Parameter Count Comparison</h2>
+
       <p>
-        A <strong>parameter</strong> is a single number inside the model — one weight or one bias. Our playground
-        network in Chapter 4 had about 50 parameters. That's like a tiny calculator. Now look at how real models compare:
+        A <strong>parameter</strong> is a single number inside the model — one weight or one bias.
+        Every connection between neurons has a weight. Every neuron has a bias. Every attention head
+        has query, key, and value matrices full of weights. Add them all up, and you get the model's
+        <strong>parameter count</strong> — the total number of individual numbers that the model
+        learned during training. This is the most common way to measure a model's size, and it's
+        the number you see in headlines: "GPT-3 has 175 billion parameters!" But what do these
+        numbers actually mean? Let's visualize them.
+      </p>
+
+      <p>
+        Our playground network in Chapter 4 had about <strong>50 parameters</strong>. That's like
+        a tiny calculator — enough to learn a simple spiral pattern, but nothing more. Now look at
+        how real models compare:
       </p>
 
       <div class="interactive-area">
@@ -58,29 +107,67 @@
       </div>
 
       <p>
-        Let's put <strong>1.8 trillion parameters</strong> into perspective, because that number is so large it's
-        almost meaningless on its own:
+        Notice that this chart uses a <strong>logarithmic scale</strong> — each step to the right
+        represents a <em>10× increase</em>. On a regular (linear) scale, you wouldn't even be able
+        to see the bars for the smaller models. The tiny playground network's 50 parameters would be
+        an invisible sliver of a pixel compared to GPT-4's bar. That's how enormous the difference is.
       </p>
-      <ul>
-        <li>🏖️ If each parameter were a <strong>grain of sand</strong>, GPT-4 would fill a small beach — about 7,200 cubic meters of sand</li>
-        <li>🌍 If you printed each parameter as a <strong>single digit on paper</strong>, the paper would stretch from the Earth to the Moon — and back — multiple times</li>
-        <li>⏱️ If you could count one parameter per second, it would take you over <strong>57,000 years</strong> to count them all</li>
-        <li>💾 Stored as 16-bit numbers, GPT-4's parameters take up roughly <strong>3.6 terabytes</strong> — that's about 900 high-definition movies' worth of data, just for the weights</li>
-      </ul>
+
       <p>
-        And remember: each of those 1.8 trillion parameters was <em>learned</em> through the training process you saw
-        in Chapter 2. The model started with random numbers and gradually adjusted every single parameter — trillions
-        of tiny nudges — until it could predict the next word accurately. The fact that this process works at all is,
-        frankly, astonishing.
+        Let's put <strong>1.8 trillion parameters</strong> into perspective, because that number is so
+        large it's almost meaningless on its own:
       </p>
+
+      <ul>
+        <li>🏖️ If each parameter were a <strong>grain of sand</strong>, GPT-4 would fill a small beach
+            — about 7,200 cubic meters of sand. You could build sandcastles for a lifetime and never
+            run out.</li>
+        <li>🌍 If you printed each parameter as a <strong>single digit on paper</strong>, the paper
+            would stretch from the Earth to the Moon — and back — multiple times. The Moon is 384,400
+            km away. Your parameter printout would be over 1.8 million kilometers long.</li>
+        <li>⏱️ If you could count one parameter per second, 24 hours a day, 7 days a week, it would
+            take you over <strong>57,000 years</strong> to count them all. Modern humans have only
+            existed for about 300,000 years — you'd spend a fifth of human history just counting.</li>
+        <li>💾 Stored as 16-bit numbers, GPT-4's parameters take up roughly <strong>3.6 terabytes</strong>
+            — that's about 900 high-definition movies' worth of data, just for the weights alone</li>
+        <li>🔢 Our playground network had ~50 parameters and could barely separate a spiral. GPT-4
+            has <strong>36 billion times</strong> more parameters. That's the ratio between a single
+            drop of water and all the water in Lake Michigan.</li>
+      </ul>
+
+      <p>
+        And remember: each of those 1.8 trillion parameters was <em>learned</em> through the training
+        process you saw in Chapter 2. The model started with random numbers — complete gibberish — and
+        gradually adjusted every single parameter, trillions of tiny nudges via gradient descent, until
+        it could predict the next word accurately. No human programmed these values. No one sat down and
+        decided what the 847-billionth parameter should be. The training algorithm found all 1.8 trillion
+        values automatically, by reading text and learning patterns. The fact that this process works at
+        all is, frankly, one of the most astonishing achievements in the history of computing.
+      </p>
+
+      <div class="card" style="background: rgba(139,92,246,0.05); border: 1px solid rgba(139,92,246,0.2);">
+        <h3>🤔 Why Do More Parameters Help?</h3>
+        <p>
+          Think of parameters as the model's <strong>memory capacity</strong>. A model with 50 parameters
+          can only memorize very simple patterns — like "dots on the left are blue, dots on the right are
+          red." A model with 175 billion parameters can memorize the grammar of every human language, the
+          syntax of dozens of programming languages, historical facts, scientific concepts, and the subtle
+          patterns of human conversation. More parameters = more capacity to store and retrieve knowledge.
+          But there's a catch: more parameters also need more data to fill them (otherwise the model just
+          memorizes noise) and more compute to train them.
+        </p>
+      </div>
     </div>
 
     <!-- ========== TRAINING DATA ========== -->
     <div class="section fade-in-up delay-2">
       <h2>📚 Training Data Scale</h2>
+
       <p>
-        More parameters need more data to learn from. You can't fill a massive brain with a tiny textbook — you need
-        a <em>library</em>. Here's how much text these models consumed during training:
+        A model with trillions of parameters but no data is like a brain with no experiences — enormous
+        capacity, but nothing to fill it with. More parameters need more data to learn from. You can't
+        fill a massive brain with a tiny textbook — you need a <em>library</em>. Actually, you need
+        every library on Earth, and then some. Here's how much text these models consumed during training:
       </p>
 
       <div class="interactive-area">
@@ -88,33 +175,83 @@
       </div>
 
       <p>
-        GPT-4 was trained on a staggering <strong>~13 trillion tokens</strong> of text. Where did all this text come from?
-        Essentially, most of the public internet:
+        Look at the jump between each generation. GPT-2 was trained on about 10 billion tokens — a lot
+        by 2019 standards, but tiny compared to what came next. GPT-3 used 300 billion tokens, a 30×
+        increase. And GPT-4 was trained on a staggering <strong>~13 trillion tokens</strong>, another
+        43× increase over GPT-3. Each generation didn't just get a little more data — it got
+        <em>orders of magnitude</em> more.
       </p>
-      <ul>
-        <li>📖 <strong>Wikipedia</strong> — millions of articles in dozens of languages</li>
-        <li>📚 <strong>Books</strong> — fiction, non-fiction, textbooks, manuals</li>
-        <li>🎓 <strong>Academic papers</strong> — research from every field of science</li>
-        <li>💻 <strong>Code repositories</strong> — GitHub, StackOverflow, documentation (this is how it learns to code!)</li>
-        <li>💬 <strong>Forums &amp; discussions</strong> — Reddit, Quora, and similar platforms</li>
-        <li>📰 <strong>News articles</strong> — journalism from thousands of publications</li>
-        <li>🌐 <strong>Web pages</strong> — billions of crawled web pages from across the internet</li>
-      </ul>
+
       <p>
-        How much is 13 trillion tokens? One token is roughly ¾ of a word, so that's about <strong>10 trillion words</strong>,
-        or the equivalent of roughly <strong>50 million books</strong>. A fast human reader who reads one book per day
-        would need <strong>137,000 years</strong> to read all of GPT-4's training data. The entire written history of
-        human civilization is only about 5,000 years old. GPT-4 was trained on 27× more text than humans have been
-        writing for.
+        Where did all this text come from? Essentially, <strong>most of the public internet</strong>:
       </p>
+
+      <ul>
+        <li>📖 <strong>Wikipedia</strong> — millions of articles in dozens of languages, covering
+            every topic from quantum physics to the history of pizza</li>
+        <li>📚 <strong>Books</strong> — fiction, non-fiction, textbooks, technical manuals, novels,
+            poetry collections. Thousands of authors spanning centuries of writing</li>
+        <li>🎓 <strong>Academic papers</strong> — research from every field of science: medicine,
+            physics, computer science, psychology, economics, and more</li>
+        <li>💻 <strong>Code repositories</strong> — GitHub, StackOverflow, documentation, tutorials.
+            This is how the model learns to write code! It has read millions of programs in Python,
+            JavaScript, C++, Rust, and dozens of other languages</li>
+        <li>💬 <strong>Forums &amp; discussions</strong> — Reddit, Quora, and similar platforms where
+            people ask questions and get answers on every conceivable topic</li>
+        <li>📰 <strong>News articles</strong> — journalism from thousands of publications worldwide,
+            giving the model knowledge of current events and writing styles</li>
+        <li>🌐 <strong>Web pages</strong> — billions of crawled web pages from across the internet,
+            including blogs, tutorials, recipes, reviews, and everything else humans publish online</li>
+      </ul>
+
+      <p>
+        How much is 13 trillion tokens? Remember from Chapter 5 that one token is roughly ¾ of a word.
+        So 13 trillion tokens is about <strong>10 trillion words</strong>, or the equivalent of roughly
+        <strong>50 million books</strong>. Let's make that concrete:
+      </p>
+
+      <ul>
+        <li>📖 A fast human reader who reads <strong>one book per day</strong> would need
+            <strong>137,000 years</strong> to read all of GPT-4's training data</li>
+        <li>📜 The entire written history of human civilization is only about <strong>5,000 years</strong>
+            old. GPT-4 was trained on 27× more text than humans have been writing for</li>
+        <li>🏛️ The Library of Congress, the largest library in the world, holds about 17 million books.
+            GPT-4's training data is equivalent to <strong>3,000 Libraries of Congress</strong></li>
+        <li>💰 The estimated compute cost to train GPT-4 was <strong>over $100 million</strong> — and
+            that's just the electricity and GPU rental. It doesn't include the years of research,
+            engineering, and data curation that went into it</li>
+        <li>🖥️ Training ran on a cluster of an estimated <strong>25,000+ NVIDIA A100 GPUs</strong>
+            running simultaneously for roughly 3-4 months. A single A100 costs around $10,000. That's
+            a quarter-billion dollars in hardware alone.</li>
+      </ul>
 
       <div class="card" style="background: rgba(59,130,246,0.05); border: 1px solid rgba(59,130,246,0.2);">
         <h3>💡 Why So Much Data?</h3>
         <p>
-          Remember, the model learns by predicting the next word. To predict well, it needs to have seen enough examples
-          of every kind of text: scientific writing, casual conversation, poetry, legal documents, code, jokes, stories.
-          The more diverse the training data, the more versatile the model becomes. This is why GPT-4 can switch between
-          writing a haiku and explaining thermodynamics — it's seen millions of examples of both.
+          Remember, the model learns by predicting the next word. To predict well, it needs to have seen
+          enough examples of every kind of text: scientific writing, casual conversation, poetry, legal
+          documents, code, jokes, stories, arguments, instructions, and everything in between. The more
+          diverse the training data, the more versatile the model becomes. This is why GPT-4 can switch
+          between writing a haiku and explaining thermodynamics — it's seen millions of examples of both.
+        </p>
+        <p>
+          There's also a principle called <strong>scaling laws</strong> — researchers at OpenAI discovered
+          that model performance improves predictably as you increase three things: parameters, data, and
+          compute. Double all three, and the model gets measurably better. This predictability is what
+          gave companies the confidence to spend hundreds of millions of dollars on training runs — they
+          could mathematically predict that the result would be worth it.
+        </p>
+      </div>
+
+      <div class="card" style="background: rgba(249,115,22,0.05); border: 1px solid rgba(249,115,22,0.2);">
+        <h3>⚠️ Data Quality Matters Too</h3>
+        <p>
+          It's not just about <em>quantity</em> — <strong>quality matters enormously</strong>. The internet
+          is full of spam, misinformation, duplicate content, and low-quality text. Training companies spend
+          significant effort on <strong>data curation</strong>: filtering out junk, deduplicating content,
+          balancing different types of text, and ensuring the training data is diverse and high-quality.
+          A model trained on 13 trillion tokens of garbage would produce garbage. The curation process is
+          one of the most important (and least talked about) parts of building a great language model.
         </p>
       </div>
     </div>
@@ -122,16 +259,28 @@
     <!-- ========== RLHF ========== -->
     <div class="section fade-in-up delay-3">
       <h2>🎯 RLHF: Teaching AI to Be Helpful</h2>
+
       <p>
-        Here's a secret that surprises most people: after pre-training, a language model is <strong>not</strong> a
-        helpful assistant. It's a <strong>text predictor</strong>. If you type "What is the capital of France?" it
-        might respond with "What is the capital of Germany? What is the capital of Spain?" — because on the internet,
-        quiz questions are often followed by more quiz questions. It learned to predict <em>what text typically comes
-        next</em>, not to <em>answer your question</em>.
+        Here's a secret that surprises most people: after pre-training on trillions of tokens, a language
+        model is <strong>not</strong> a helpful assistant. Not even close. It's a <strong>text predictor</strong>
+        — a very sophisticated autocomplete engine. It has absorbed an enormous amount of knowledge about
+        the world, but it has no concept of being "helpful" or "answering questions."
       </p>
+
       <p>
-        Turning a raw text predictor into the helpful, polite, safety-conscious assistant you know as ChatGPT or
-        Claude requires three additional stages of training:
+        What does this look like in practice? If you type <em>"What is the capital of France?"</em> into
+        a raw pre-trained model, it might respond with: <em>"What is the capital of Germany? What is the
+        capital of Spain? What is the capital of Italy?"</em> — because on the internet, quiz questions
+        are often followed by more quiz questions. The model learned to predict <em>what text typically
+        comes next in a document</em>, not to <em>answer your question directly</em>. It might also
+        respond with <em>"The answer is Paris. Question 2: What is..."</em> in a quiz-show format,
+        or even just continue with unrelated text from whatever pattern it latched onto.
+      </p>
+
+      <p>
+        So how do you turn this raw text predictor into the helpful, polite, safety-conscious assistant
+        you know as ChatGPT or Claude? It takes <strong>three additional stages</strong> of training,
+        each building on the last:
       </p>
 
       <div class="interactive-area">
@@ -155,51 +304,112 @@
         <div class="narration" style="margin-top:16px;">This is why ChatGPT sounds helpful and polite — it's been trained with human feedback to prefer helpful, safe responses over raw text prediction.</div>
       </div>
 
-      <p>Let's unpack each stage:</p>
+      <p>Let's unpack each stage in detail:</p>
 
       <div class="card" style="border-left:4px solid var(--blue);">
         <h3>Stage 1: Pre-training — The Knowledge Phase</h3>
         <p>
-          This is where the model reads those 13 trillion tokens and learns to predict the next word. After this stage,
-          the model has absorbed an enormous amount of <em>knowledge</em> — facts, grammar, reasoning patterns, code
-          syntax, multiple languages — but it has no idea how to be <em>helpful</em>. It's like a student who has read
-          every book in the library but has never had a conversation. It knows everything but can't communicate well.
+          This is where the model reads those 13 trillion tokens and learns to predict the next word.
+          The training objective is deceptively simple: given some text, predict what word comes next.
+          But to do this well across <em>all</em> types of text, the model must implicitly learn grammar,
+          facts, reasoning, common sense, multiple languages, coding syntax, and the subtle patterns of
+          human thought and communication.
+        </p>
+        <p>
+          After this stage, the model has absorbed an enormous amount of <em>knowledge</em> — facts,
+          grammar, reasoning patterns, code syntax, multiple languages — but it has no idea how to be
+          <em>helpful</em>. It's like a student who has read every book in the library but has never
+          had a conversation. Ask it a question, and it'll continue the text in whatever direction
+          seems statistically likely — which is usually not a direct answer.
+        </p>
+        <p>
+          Pre-training is by far the most expensive stage. It requires thousands of GPUs running for
+          months and costs hundreds of millions of dollars. But it's also the most important — this is
+          where the model acquires all of its knowledge about the world. The later stages are comparatively
+          cheap; they just teach the model <em>how to use</em> the knowledge it already has.
         </p>
       </div>
 
       <div class="card" style="border-left:4px solid var(--purple);">
         <h3>Stage 2: Supervised Fine-Tuning (SFT) — Learning the Format</h3>
         <p>
-          In this stage, human trainers write thousands of example conversations in the format: "User asks a question →
-          Assistant gives a helpful answer." The model is then trained on these examples, learning that when it sees a
-          user's message, it should respond like a helpful assistant — not continue generating random text.
+          In this stage, human trainers write <strong>thousands of example conversations</strong> in the
+          format: "User asks a question → Assistant gives a helpful answer." These examples cover a wide
+          range of tasks: answering factual questions, writing code, explaining concepts, summarizing
+          text, creative writing, and more. The model is then trained on these examples, learning that
+          when it sees a user's message, it should respond like a helpful assistant — not continue
+          generating random text.
         </p>
         <p>
-          Think of it like this: pre-training teaches you English, SFT teaches you how to be a good customer service
-          representative. You already know the language; now you're learning the <em>role</em>.
+          Think of it like this: pre-training teaches you English (and dozens of other languages), while
+          SFT teaches you how to be a good customer service representative. You already know the language;
+          now you're learning the <em>role</em>. After SFT, the model understands the "User: ... Assistant: ..."
+          format and will generally try to answer questions rather than generating unrelated text. But it's
+          still not great — its answers might be verbose, off-topic, or subtly wrong. That's where the
+          final stage comes in.
         </p>
       </div>
 
       <div class="card" style="border-left:4px solid var(--orange);">
         <h3>Stage 3: RLHF — The Secret Sauce</h3>
         <p>
-          <strong>RLHF</strong> stands for <strong>Reinforcement Learning from Human Feedback</strong>, and it's what
-          makes the difference between a decent chatbot and a great one. Here's how it works:
+          <strong>RLHF</strong> stands for <strong>Reinforcement Learning from Human Feedback</strong>,
+          and it's what makes the difference between a decent chatbot and a genuinely helpful assistant.
+          Here's the step-by-step process:
         </p>
         <ol>
-          <li>The model generates <strong>multiple different responses</strong> to the same question</li>
-          <li>Human raters compare the responses and rank them: "Response A is better than Response B"</li>
-          <li>From thousands of these comparisons, a separate <strong>reward model</strong> is trained — a model that
-              can predict what humans would prefer</li>
-          <li>The main language model is then fine-tuned to maximize the reward model's score — essentially learning
-              to produce responses that humans would rate highly</li>
+          <li>The model generates <strong>multiple different responses</strong> to the same question —
+              maybe 4 or 8 different answers to "Explain photosynthesis to a 5-year-old"</li>
+          <li>Human raters compare the responses and <strong>rank them</strong>: "Response A is better
+              than Response B because it's clearer and more accurate"</li>
+          <li>From tens of thousands of these comparisons, a separate <strong>reward model</strong> is
+              trained — a neural network that can predict what humans would prefer, even for responses
+              it has never seen before</li>
+          <li>The main language model is then fine-tuned using reinforcement learning (specifically, an
+              algorithm called PPO) to <strong>maximize the reward model's score</strong> — essentially
+              learning to produce responses that humans would rate highly</li>
         </ol>
         <p>
-          This is why ChatGPT says <em>"I'm sorry, I can't help with that"</em> when you ask it to do something
-          harmful — it learned that refusing dangerous requests gets higher human approval scores. It's also why
-          the model is polite, provides caveats, and tries to be balanced — all of these behaviors were rewarded
-          by human raters during RLHF.
+          The beauty of this approach is that humans don't have to define "good" explicitly — they just
+          have to <em>recognize</em> it. It's much easier to say "Response A is better than Response B"
+          than to write out detailed rules for what makes a good response. The reward model learns these
+          implicit preferences automatically.
         </p>
+      </div>
+
+      <p>
+        <strong>So why does this matter?</strong> RLHF is directly responsible for the personality and
+        behavior you experience when talking to an AI assistant. This is why ChatGPT says <em>"I'm sorry,
+        I can't help with that"</em> when you ask it to do something harmful — it learned that refusing
+        dangerous requests gets <strong>higher human approval scores</strong>. It's why the model is
+        polite, provides caveats ("However, it's worth noting that..."), tries to be balanced, and
+        acknowledges uncertainty. All of these behaviors were <strong>rewarded by human raters</strong>
+        during RLHF.
+      </p>
+
+      <p>
+        It's also why AI assistants sometimes exhibit quirky behaviors — like being overly apologetic
+        or adding unnecessary disclaimers. These are artifacts of the RLHF process: at some point,
+        human raters preferred responses that were cautious and hedged, so the model learned to be
+        cautious and hedge <em>all the time</em>, even when it's not necessary. Researchers are
+        actively working on reducing these artifacts while keeping the benefits of human alignment.
+      </p>
+
+      <div class="card" style="background: rgba(34,197,94,0.05); border: 1px solid rgba(34,197,94,0.2);">
+        <h3>🧪 An Analogy: Training a Dog</h3>
+        <p>
+          If the three stages of training seem abstract, think of training a dog:
+        </p>
+        <ul>
+          <li><strong>Pre-training</strong> is like a puppy exploring the world — sniffing everything,
+              learning what objects are, how gravity works, what other dogs look like. It's gaining
+              knowledge about the world through experience.</li>
+          <li><strong>SFT</strong> is like basic obedience school — teaching the dog that "sit" means
+              sit, "stay" means stay. You're showing it the format: command → correct behavior.</li>
+          <li><strong>RLHF</strong> is like ongoing reward-based training — giving treats for good
+              behavior, withholding treats for bad behavior. Over time, the dog learns not just to
+              follow specific commands, but to <em>generally</em> behave in ways that please its owner.</li>
+        </ul>
       </div>
     </div>
 
@@ -208,51 +418,72 @@
       <h2>🚀 What's Next? The Frontier of AI</h2>
 
       <p>
-        The field of AI is moving at breakneck speed. Here are the most exciting frontiers being explored right now:
+        Everything we've covered in this course — neurons, learning, attention, Transformers, RLHF —
+        represents the <em>foundation</em> of modern AI. But the field is moving at breakneck speed,
+        and researchers are pushing the boundaries in every direction simultaneously. Here are the most
+        exciting frontiers being explored right now, and where AI is likely headed in the near future:
       </p>
 
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;">
         <div class="card" style="border-left:4px solid #22c55e;">
           <h3>🧠 Reasoning</h3>
           <p>
-            Teaching models to <strong>"think step by step"</strong> (chain of thought reasoning) before answering.
-            Models like OpenAI's o1 and Claude can now solve complex math and logic problems by breaking them into steps,
-            just like a human would work through a problem on paper.
+            Teaching models to <strong>"think step by step"</strong> before answering — what researchers
+            call <strong>chain-of-thought reasoning</strong>. Instead of blurting out an answer immediately,
+            models like OpenAI's o1 and o3 take time to work through problems, breaking complex questions
+            into smaller steps, just like a human working through a math problem on scratch paper. This
+            dramatically improves performance on math, logic, coding, and scientific reasoning tasks.
           </p>
         </div>
         <div class="card" style="border-left:4px solid #3b82f6;">
           <h3>👁️ Multimodal</h3>
           <p>
-            Models that understand <strong>images, audio, and video</strong> — not just text. GPT-4V can describe photos,
-            Gemini can watch videos, and some models can generate images from text descriptions. The goal: AI that perceives
-            the world the way humans do.
+            Models that understand <strong>images, audio, and video</strong> — not just text. GPT-4V can
+            describe photos and read handwriting. Gemini can watch and understand videos. Some models can
+            generate images from text descriptions (DALL-E, Midjourney). The goal: AI that perceives
+            the world the way humans do — through multiple senses, all integrated into one model.
           </p>
         </div>
         <div class="card" style="border-left:4px solid #8b5cf6;">
           <h3>🤖 Agents</h3>
           <p>
-            AI that can <strong>use tools and take actions</strong> — browsing the web, writing and running code, sending
-            emails, booking flights. Instead of just answering questions, agents can actually <em>do things</em> in the
-            real world on your behalf.
+            AI that can <strong>use tools and take actions</strong> in the real world — browsing the web,
+            writing and running code, sending emails, managing files, booking flights, filling out forms.
+            Instead of just answering questions, agents can actually <em>do things</em> on your behalf.
+            Think of it as the difference between asking someone for directions and asking them to drive
+            you there.
           </p>
         </div>
         <div class="card" style="border-left:4px solid #f97316;">
           <h3>📏 Longer Context</h3>
           <p>
-            Expanding how much text a model can process at once. Gemini 1.5 can handle <strong>1 million tokens</strong>
-            (~2,500 pages). Some research targets <strong>10 million+ tokens</strong> — enough to read every book in a
-            small library in a single prompt.
+            Expanding how much text a model can process at once. GPT-4 supports <strong>128,000 tokens</strong>
+            (~300 pages). Gemini 1.5 can handle <strong>1 million tokens</strong> (~2,500 pages). Some
+            research targets <strong>10 million+ tokens</strong> — enough to read every book in a small
+            library in a single prompt. Longer context means the model can work with entire codebases,
+            legal documents, or book series at once.
           </p>
         </div>
         <div class="card" style="border-left:4px solid #ef4444;">
           <h3>⚡ Smaller &amp; Faster</h3>
           <p>
-            Making powerful models that can run on <strong>phones and laptops</strong> instead of massive data centers.
-            Techniques like quantization, distillation, and clever architectures are shrinking models from terabytes
-            to gigabytes while keeping them surprisingly capable.
+            Making powerful models that can run on <strong>phones and laptops</strong> instead of massive
+            data centers. Techniques like quantization (reducing precision from 16-bit to 4-bit),
+            distillation (training a small model to mimic a large one), and clever architectural
+            innovations are shrinking models from terabytes to gigabytes while keeping them surprisingly
+            capable. The goal: GPT-4-level intelligence in your pocket.
           </p>
         </div>
       </div>
+
+      <p>
+        The pace of progress is staggering. GPT-2 was released in 2019 and could barely write a coherent
+        paragraph. Just five years later, GPT-4 can pass the bar exam, write working software, and explain
+        complex topics with nuance and clarity. If progress continues at this rate — and there's every
+        reason to believe it will — the AI systems of 2030 may be as far beyond GPT-4 as GPT-4 is beyond
+        GPT-2. We're living through one of the most transformative technological revolutions in human
+        history, and now you understand the foundations it's built on.
+      </p>
     </div>
 
     <!-- ========== CONGRATULATIONS ========== -->
