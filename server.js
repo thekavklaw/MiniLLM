@@ -247,6 +247,168 @@ app.post('/api/generate', (req, res) => {
   }
 });
 
+// Custom text LSTM training (small model, CPU, ~15-30s)
+const customModels = new Map(); // ip -> { model, vocab, charToIdx, idxToChar }
+const trainLimits = new Map();
+
+app.post('/api/train-custom', async (req, res) => {
+  const ip = req.headers['x-forwarded-for'] || req.ip;
+  if (!checkRateLimit(ip, 3, 300000)) {
+    return res.status(429).json({ error: 'Rate limited. Max 3 training requests per 5 minutes.' });
+  }
+
+  const { text } = req.body;
+  if (!text || text.length < 100) return res.status(400).json({ error: 'Need at least 100 characters of text.' });
+  if (text.length > 50000) return res.status(400).json({ error: 'Max 50,000 characters.' });
+
+  try {
+    const tf = require('@tensorflow/tfjs-node');
+    const SEQ_LEN = 20;
+    const UNITS = 32;
+    const EPOCHS = 10;
+    const BATCH_SIZE = 32;
+
+    // Build vocabulary
+    const chars = [...new Set(text.split(''))].sort();
+    const charToIdx = {};
+    const idxToChar = {};
+    chars.forEach((c, i) => { charToIdx[c] = i; idxToChar[i] = c; });
+    const vocabSize = chars.length;
+
+    // Prepare training data
+    const maxSamples = 500;
+    const step = Math.max(1, Math.floor((text.length - SEQ_LEN - 1) / maxSamples));
+    const xData = [], yData = [];
+
+    for (let i = 0; i < text.length - SEQ_LEN - 1; i += step) {
+      if (xData.length >= maxSamples) break;
+      const seq = text.slice(i, i + SEQ_LEN);
+      const target = text[i + SEQ_LEN];
+      if (charToIdx[target] === undefined) continue;
+      const x = [];
+      let valid = true;
+      for (let j = 0; j < SEQ_LEN; j++) {
+        if (charToIdx[seq[j]] === undefined) { valid = false; break; }
+        const oh = new Float32Array(vocabSize);
+        oh[charToIdx[seq[j]]] = 1;
+        x.push(oh);
+      }
+      if (!valid) continue;
+      const y = new Float32Array(vocabSize);
+      y[charToIdx[target]] = 1;
+      xData.push(x);
+      yData.push(y);
+    }
+
+    if (xData.length < 20) return res.status(400).json({ error: 'Not enough usable training data.' });
+
+    const xTensor = tf.tensor3d(xData);
+    const yTensor = tf.tensor2d(yData);
+
+    const model = tf.sequential();
+    model.add(tf.layers.lstm({ units: UNITS, inputShape: [SEQ_LEN, vocabSize], returnSequences: false }));
+    model.add(tf.layers.dense({ units: vocabSize, activation: 'softmax' }));
+    model.compile({ optimizer: tf.train.adam(0.005), loss: 'categoricalCrossentropy' });
+
+    const losses = [];
+    const t0 = Date.now();
+    await model.fit(xTensor, yTensor, {
+      epochs: EPOCHS,
+      batchSize: BATCH_SIZE,
+      shuffle: true,
+      callbacks: { onEpochEnd: (epoch, logs) => losses.push(logs.loss) }
+    });
+    const trainTime = Date.now() - t0;
+
+    xTensor.dispose();
+    yTensor.dispose();
+
+    // Store the model in memory for this IP
+    // Clean up old model if exists
+    if (customModels.has(ip)) {
+      try { customModels.get(ip).model.dispose(); } catch(e) {}
+    }
+    customModels.set(ip, { model, charToIdx, idxToChar, vocabSize, seqLen: SEQ_LEN });
+
+    const totalParams = model.countParams();
+    res.json({
+      success: true,
+      samples: xData.length,
+      vocabSize,
+      totalParams,
+      epochs: EPOCHS,
+      finalLoss: losses[losses.length - 1],
+      losses,
+      trainTimeMs: trainTime,
+      architecture: `LSTM (${UNITS} units)`
+    });
+  } catch (e) {
+    console.error('Custom training error:', e);
+    res.status(500).json({ error: 'Training failed: ' + e.message });
+  }
+});
+
+// Generate from custom model
+app.post('/api/generate-custom', (req, res) => {
+  const ip = req.headers['x-forwarded-for'] || req.ip;
+  if (!checkRateLimit(ip, 15, 60000)) return res.status(429).json({ error: 'Rate limited.' });
+
+  const cm = customModels.get(ip);
+  if (!cm) return res.status(404).json({ error: 'No custom model trained. Train one first.' });
+
+  const { prompt, temperature, length } = req.body;
+  if (!prompt) return res.status(400).json({ error: 'Missing prompt.' });
+
+  const tf = require('@tensorflow/tfjs-node');
+  const maxLen = Math.min(parseInt(length) || 100, 200);
+  const temp = Math.max(0.1, Math.min(2.0, parseFloat(temperature) || 0.7));
+
+  try {
+    let result = '';
+    let current = prompt.slice(-cm.seqLen);
+
+    for (let i = 0; i < maxLen; i++) {
+      const padded = current.padStart(cm.seqLen, ' ').slice(-cm.seqLen);
+      const input = [];
+      let valid = true;
+      for (let j = 0; j < cm.seqLen; j++) {
+        const oh = new Float32Array(cm.vocabSize);
+        const idx = cm.charToIdx[padded[j]];
+        if (idx !== undefined) oh[idx] = 1;
+        else { oh[0] = 1; } // fallback
+        input.push(oh);
+      }
+      const tensor = tf.tensor3d([input]);
+      const pred = cm.model.predict(tensor);
+      const probs = pred.dataSync();
+      tensor.dispose();
+      pred.dispose();
+
+      // Temperature sampling
+      const logits = Array.from(probs).map(p => Math.log(Math.max(p, 1e-10)) / temp);
+      const maxL = Math.max(...logits);
+      const exps = logits.map(l => Math.exp(l - maxL));
+      const sum = exps.reduce((a, b) => a + b, 0);
+      const dist = exps.map(e => e / sum);
+
+      let r = Math.random(), cumul = 0, chosen = 0;
+      for (let j = 0; j < dist.length; j++) {
+        cumul += dist[j];
+        if (r <= cumul) { chosen = j; break; }
+      }
+
+      const ch = cm.idxToChar[chosen] || '?';
+      result += ch;
+      current = (current + ch).slice(-cm.seqLen);
+    }
+
+    res.json({ text: result, model: 'custom-lstm-32', params: cm.model.countParams() });
+  } catch (e) {
+    console.error('Custom generation error:', e);
+    res.status(500).json({ error: 'Generation failed.' });
+  }
+});
+
 // Model info endpoint
 app.get('/api/model-info', (req, res) => {
   const loaded = Object.keys(lstmModels);

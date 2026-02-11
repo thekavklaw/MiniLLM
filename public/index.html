@@ -325,7 +325,7 @@
 
             <div class="markov-output" id="markov-output" style="margin-top:0.8rem; min-height:60px; padding:1rem; background:rgba(255,255,255,0.4); border-radius:var(--radius-sm); font-size:0.95rem; line-height:1.7; white-space:pre-wrap;"></div>
 
-            <p style="color:#94a3b8; font-size:0.8rem; margin-top:0.8rem;">Compare this to the LSTM output above — same training data, very different quality. That's the power of neural networks.</p>
+            <p style="color:#94a3b8; font-size:0.8rem; margin-top:0.8rem;">Notice how the Markov chain can produce surprisingly readable text — it's great at short phrases because it memorizes exact sequences. But try a longer prompt or switch presets: it quickly drifts into nonsense because it has zero understanding. The LSTM above isn't much better at this tiny scale, but the same architecture scaled to billions of parameters becomes GPT.</p>
           </div>
 
         </div>

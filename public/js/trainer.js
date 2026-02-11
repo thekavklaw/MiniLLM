@@ -19,6 +19,7 @@
   let activePreset = 'shakespeare';
   let isGenerating = false;
   let modelReady = false;
+  let isCustomTrained = false;
 
   // ===== Preset buttons =====
   document.querySelectorAll('.preset-btn').forEach(btn => {
@@ -96,7 +97,69 @@
   if (trainBtn) {
     trainBtn.addEventListener('click', async () => {
       if (activePreset === 'custom') {
-        alert('Custom text uses the Markov chain in the bonus section below — scroll down! The neural network models are pre-trained on Shakespeare, Recipes, and Python.');
+        const customArea = document.getElementById('custom-text');
+        const customText = customArea ? customArea.value.trim() : '';
+        if (customText.length < 100) {
+          alert('Paste at least 100 characters of text to train on.');
+          return;
+        }
+        trainBtn.disabled = true;
+        trainBtn.textContent = '🧠 Training your model (~15-30s)...';
+        try {
+          const resp = await fetch('/api/train-custom', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: customText })
+          });
+          const data = await resp.json();
+          if (!resp.ok) { alert(data.error || 'Training failed'); resetModel(); return; }
+
+          // Show dashboard
+          const dashboard = document.getElementById('training-dashboard');
+          if (dashboard) {
+            dashboard.style.display = 'block';
+            dashboard.innerHTML = `
+              <div class="train-stats">
+                <div class="stat-item"><div class="stat-value">LSTM</div><div class="stat-label">Architecture</div></div>
+                <div class="stat-item"><div class="stat-value">${data.totalParams.toLocaleString()}</div><div class="stat-label">Parameters</div></div>
+                <div class="stat-item"><div class="stat-value">${data.epochs}</div><div class="stat-label">Epochs</div></div>
+                <div class="stat-item"><div class="stat-value">${data.finalLoss.toFixed(3)}</div><div class="stat-label">Final Loss</div></div>
+                <div class="stat-item"><div class="stat-value">${(data.trainTimeMs/1000).toFixed(1)}s</div><div class="stat-label">Train Time</div></div>
+                <div class="stat-item"><div class="stat-value">${data.vocabSize}</div><div class="stat-label">Vocab Size</div></div>
+              </div>`;
+          }
+
+          // Generate sample
+          const genResp = await fetch('/api/generate-custom', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: customText.slice(0, 20), temperature: 0.7, length: 150 })
+          });
+          const genData = await genResp.json();
+          const sample = document.getElementById('sample-text');
+          if (sample && genData.text) {
+            sample.style.display = 'block';
+            sample.innerHTML = `<div class="gen-output"><span class="seed-text">${escapeHtml(customText.slice(0,20))}</span><span class="gen-text">${escapeHtml(genData.text)}</span></div>`;
+          }
+
+          // Show commentary
+          const commentary = document.getElementById('output-commentary');
+          if (commentary) {
+            commentary.style.display = 'block';
+            commentary.innerHTML = `<strong>What happened:</strong> We just trained a real LSTM neural network with ${data.totalParams.toLocaleString()} parameters on your text. Loss dropped to ${data.finalLoss.toFixed(3)} after ${data.epochs} epochs. The output is rough — with only ${data.samples} training samples and ${data.totalParams.toLocaleString()} parameters, this model is trying to learn language from almost nothing. GPT-4 has 36 <em>billion</em> times more parameters and trained on trillions of words.`;
+          }
+
+          // Show generate step
+          isCustomTrained = true;
+          modelReady = true;
+          const step4 = document.getElementById('train-step-4');
+          if (step4) step4.style.display = 'block';
+          trainBtn.textContent = '✅ Trained! Try generating below';
+          trainBtn.disabled = true;
+        } catch(e) {
+          alert('Training failed: ' + e.message);
+          resetModel();
+        }
         return;
       }
 
@@ -227,10 +290,14 @@
 
       try {
         const temp = tempSlider ? parseFloat(tempSlider.value) : 0.7;
-        const resp = await fetch('/api/generate', {
+        const endpoint = (activePreset === 'custom' && isCustomTrained) ? '/api/generate-custom' : '/api/generate';
+        const body = (activePreset === 'custom' && isCustomTrained) 
+          ? { prompt, temperature: temp, length: 200 }
+          : { prompt, preset: activePreset, temperature: temp, length: 200 };
+        const resp = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt, preset: activePreset, temperature: temp, length: 200 })
+          body: JSON.stringify(body)
         });
         const data = await resp.json();
 
