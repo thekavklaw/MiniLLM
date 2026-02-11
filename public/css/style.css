@@ -940,3 +940,12 @@ h2 {
 @media (max-width: 768px) {
   .train-stats { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* Loading cursor for generation */
+.gen-loading {
+  animation: blink 0.5s infinite;
+}
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}

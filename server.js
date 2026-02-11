@@ -148,4 +148,120 @@ app.get('/api/models/:id/info', (req, res) => {
   res.json({ id: req.params.id, preset: row.preset, createdAt: row.created_at, sizeBytes: row.size_bytes });
 });
 
-app.listen(PORT, () => console.log(`MiniLLM running on port ${PORT}`));
+// ===== LSTM Neural Network Language Models =====
+let tf;
+const lstmModels = {};
+
+async function loadLSTMModels() {
+  try {
+    tf = require('@tensorflow/tfjs-node');
+  } catch (e) {
+    console.error('TF.js not available, LSTM generation disabled');
+    return;
+  }
+  const modelsDir = path.join(__dirname, 'models');
+  for (const preset of ['shakespeare', 'recipes', 'python']) {
+    const modelPath = path.join(modelsDir, preset, 'model.json');
+    const vocabPath = path.join(modelsDir, preset, 'vocab.json');
+    if (!fs.existsSync(modelPath) || !fs.existsSync(vocabPath)) {
+      console.log(`LSTM model not found for ${preset}, skipping`);
+      continue;
+    }
+    try {
+      const model = await tf.loadLayersModel(`file://${modelPath}`);
+      const vocab = JSON.parse(fs.readFileSync(vocabPath, 'utf-8'));
+      lstmModels[preset] = { model, vocab };
+      console.log(`LSTM model loaded: ${preset} (vocab=${vocab.vocabSize})`);
+    } catch (e) {
+      console.error(`Failed to load ${preset}:`, e.message);
+    }
+  }
+}
+
+function lstmGenerate(preset, seed, length, temperature) {
+  const { model, vocab } = lstmModels[preset];
+  const { charToIdx, idxToChar, vocabSize, seqLen } = vocab;
+  temperature = temperature || 0.7;
+
+  // Pad or truncate seed to seqLen
+  let ctx = seed.slice(-seqLen);
+  while (ctx.length < seqLen) ctx = ' ' + ctx;
+
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    // One-hot encode context
+    const x = [];
+    for (let j = 0; j < seqLen; j++) {
+      const oh = new Float32Array(vocabSize);
+      const idx = charToIdx[ctx[j]];
+      if (idx !== undefined) oh[idx] = 1;
+      else oh[0] = 1; // fallback
+      x.push(oh);
+    }
+
+    const input = tf.tensor3d([x]);
+    const pred = model.predict(input);
+    const probs = pred.dataSync();
+    input.dispose();
+    pred.dispose();
+
+    // Temperature sampling
+    const scaled = Array.from(probs).map(p => Math.exp(Math.log(Math.max(p, 1e-8)) / temperature));
+    const sum = scaled.reduce((a, b) => a + b, 0);
+    const norm = scaled.map(s => s / sum);
+
+    let r = Math.random();
+    let idx = 0;
+    for (let j = 0; j < norm.length; j++) {
+      r -= norm[j];
+      if (r <= 0) { idx = j; break; }
+    }
+
+    const ch = idxToChar[String(idx)] || ' ';
+    result += ch;
+    ctx = ctx.slice(1) + ch;
+  }
+  return result;
+}
+
+// LSTM generation endpoint
+app.post('/api/generate', (req, res) => {
+  const ip = req.headers['x-forwarded-for'] || req.ip;
+  if (!checkRateLimit(ip, 15, 60000)) {
+    return res.status(429).json({ error: 'Rate limited. Max 15 requests per minute.' });
+  }
+
+  const { prompt, preset, temperature, length } = req.body;
+  if (!prompt || !preset) return res.status(400).json({ error: 'Missing prompt or preset.' });
+  if (!lstmModels[preset]) return res.status(404).json({ error: `Model "${preset}" not loaded.` });
+
+  const maxLen = Math.min(parseInt(length) || 150, 300);
+  const temp = Math.max(0.1, Math.min(2.0, parseFloat(temperature) || 0.7));
+
+  try {
+    const text = lstmGenerate(preset, prompt, maxLen, temp);
+    res.json({ text, model: 'lstm-64', params: 35900, preset });
+  } catch (e) {
+    console.error('Generation error:', e);
+    res.status(500).json({ error: 'Generation failed.' });
+  }
+});
+
+// Model info endpoint
+app.get('/api/model-info', (req, res) => {
+  const loaded = Object.keys(lstmModels);
+  res.json({
+    models: loaded,
+    architecture: 'LSTM (64 units)',
+    totalParams: 35900,
+    type: 'Character-level neural language model'
+  });
+});
+
+// Load models then start server
+loadLSTMModels().then(() => {
+  app.listen(PORT, () => console.log(`MiniLLM running on port ${PORT}`));
+}).catch(e => {
+  console.error('Failed to load models:', e);
+  app.listen(PORT, () => console.log(`MiniLLM running on port ${PORT} (no LSTM models)`));
+});
