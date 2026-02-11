@@ -20,6 +20,7 @@
   let isGenerating = false;
   let modelReady = false;
   let isCustomTrained = false;
+  let customModelToken = null;
 
   // ===== Preset buttons =====
   document.querySelectorAll('.preset-btn').forEach(btn => {
@@ -133,7 +134,7 @@
           const genResp = await fetch('/api/generate-custom', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: customText.slice(0, 20), temperature: 0.7, length: 150 })
+            body: JSON.stringify({ prompt: customText.slice(0, 20), temperature: 0.7, length: 150, modelToken: data.modelToken })
           });
           const genData = await genResp.json();
           const sample = document.getElementById('sample-text');
@@ -152,6 +153,7 @@
           // Show generate step
           isCustomTrained = true;
           modelReady = true;
+          customModelToken = data.modelToken;
           const step4 = document.getElementById('train-step-4');
           if (step4) step4.style.display = 'block';
           trainBtn.textContent = '✅ Trained! Try generating below';
@@ -292,7 +294,7 @@
         const temp = tempSlider ? parseFloat(tempSlider.value) : 0.7;
         const endpoint = (activePreset === 'custom' && isCustomTrained) ? '/api/generate-custom' : '/api/generate';
         const body = (activePreset === 'custom' && isCustomTrained) 
-          ? { prompt, temperature: temp, length: 200 }
+          ? { prompt, temperature: temp, length: 200, modelToken: customModelToken }
           : { prompt, preset: activePreset, temperature: temp, length: 200 };
         const resp = await fetch(endpoint, {
           method: 'POST',

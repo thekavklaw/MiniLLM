@@ -248,8 +248,22 @@ app.post('/api/generate', (req, res) => {
 });
 
 // Custom text LSTM training (small model, CPU, ~15-30s)
-const customModels = new Map(); // ip -> { model, vocab, charToIdx, idxToChar }
-const trainLimits = new Map();
+const customModels = new Map(); // token -> { model, vocab, charToIdx, idxToChar, createdAt }
+let activeTrainings = 0;
+const MAX_CONCURRENT_TRAININGS = 2;
+const MAX_CUSTOM_MODELS = 20;
+const MODEL_TTL_MS = 30 * 60 * 1000; // 30 min
+
+// Cleanup expired models every 5 min
+setInterval(() => {
+  const now = Date.now();
+  for (const [token, cm] of customModels) {
+    if (now - cm.createdAt > MODEL_TTL_MS) {
+      try { cm.model.dispose(); } catch(e) {}
+      customModels.delete(token);
+    }
+  }
+}, 5 * 60 * 1000);
 
 app.post('/api/train-custom', async (req, res) => {
   const ip = req.headers['x-forwarded-for'] || req.ip;
@@ -257,10 +271,24 @@ app.post('/api/train-custom', async (req, res) => {
     return res.status(429).json({ error: 'Rate limited. Max 3 training requests per 5 minutes.' });
   }
 
+  if (activeTrainings >= MAX_CONCURRENT_TRAININGS) {
+    return res.status(503).json({ error: 'Server busy — too many models training right now. Try again in 30 seconds.' });
+  }
+
+  if (customModels.size >= MAX_CUSTOM_MODELS) {
+    // Evict oldest
+    let oldest = null, oldestTime = Infinity;
+    for (const [token, cm] of customModels) {
+      if (cm.createdAt < oldestTime) { oldest = token; oldestTime = cm.createdAt; }
+    }
+    if (oldest) { try { customModels.get(oldest).model.dispose(); } catch(e) {} customModels.delete(oldest); }
+  }
+
   const { text } = req.body;
   if (!text || text.length < 100) return res.status(400).json({ error: 'Need at least 100 characters of text.' });
   if (text.length > 50000) return res.status(400).json({ error: 'Max 50,000 characters.' });
 
+  activeTrainings++;
   try {
     const tf = require('@tensorflow/tfjs-node');
     const SEQ_LEN = 20;
@@ -323,16 +351,15 @@ app.post('/api/train-custom', async (req, res) => {
     xTensor.dispose();
     yTensor.dispose();
 
-    // Store the model in memory for this IP
-    // Clean up old model if exists
-    if (customModels.has(ip)) {
-      try { customModels.get(ip).model.dispose(); } catch(e) {}
-    }
-    customModels.set(ip, { model, charToIdx, idxToChar, vocabSize, seqLen: SEQ_LEN });
+    // Store the model with a unique token
+    const modelToken = crypto.randomBytes(16).toString('hex');
+    customModels.set(modelToken, { model, charToIdx, idxToChar, vocabSize, seqLen: SEQ_LEN, createdAt: Date.now() });
 
     const totalParams = model.countParams();
+    activeTrainings--;
     res.json({
       success: true,
+      modelToken,
       samples: xData.length,
       vocabSize,
       totalParams,
@@ -344,6 +371,7 @@ app.post('/api/train-custom', async (req, res) => {
     });
   } catch (e) {
     console.error('Custom training error:', e);
+    activeTrainings--;
     res.status(500).json({ error: 'Training failed: ' + e.message });
   }
 });
@@ -353,10 +381,10 @@ app.post('/api/generate-custom', (req, res) => {
   const ip = req.headers['x-forwarded-for'] || req.ip;
   if (!checkRateLimit(ip, 15, 60000)) return res.status(429).json({ error: 'Rate limited.' });
 
-  const cm = customModels.get(ip);
-  if (!cm) return res.status(404).json({ error: 'No custom model trained. Train one first.' });
-
-  const { prompt, temperature, length } = req.body;
+  const { prompt, temperature, length, modelToken } = req.body;
+  if (!modelToken) return res.status(400).json({ error: 'Missing modelToken.' });
+  const cm = customModels.get(modelToken);
+  if (!cm) return res.status(404).json({ error: 'Model expired or not found. Train a new one.' });
   if (!prompt) return res.status(400).json({ error: 'Missing prompt.' });
 
   const tf = require('@tensorflow/tfjs-node');
