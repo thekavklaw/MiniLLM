@@ -2,6 +2,40 @@
 (function() {
   'use strict';
 
+  // Turnstile helper
+  const TURNSTILE_SITEKEY = '0x4AAAAAACZGxpcf0vhl9Oes';
+  let turnstileToken = null;
+  let turnstileWidgetId = null;
+
+  function getTurnstileToken() {
+    return new Promise((resolve) => {
+      if (typeof turnstile === 'undefined') { resolve(null); return; }
+      const container = document.getElementById('turnstile-container');
+      if (!container) { resolve(null); return; }
+      container.style.opacity = '1';
+      container.style.pointerEvents = 'auto';
+      
+      if (turnstileWidgetId !== null) {
+        try { turnstile.reset(turnstileWidgetId); } catch(e) {}
+      }
+      
+      turnstileWidgetId = turnstile.render(container, {
+        sitekey: TURNSTILE_SITEKEY,
+        callback: function(token) {
+          turnstileToken = token;
+          container.style.opacity = '0';
+          container.style.pointerEvents = 'none';
+          resolve(token);
+        },
+        'error-callback': function() {
+          container.style.opacity = '0';
+          container.style.pointerEvents = 'none';
+          resolve(null);
+        }
+      });
+    });
+  }
+
   // Collapsible sections (landing page doesn't load nav.js)
   document.querySelectorAll('.collapsible-header').forEach(header => {
     if (header._collapsibleBound) return;
@@ -105,12 +139,15 @@
           return;
         }
         trainBtn.disabled = true;
-        trainBtn.textContent = '🧠 Training your model (~15-30s)...';
+        trainBtn.textContent = '🔒 Verifying...';
         try {
+          const tsToken = await getTurnstileToken();
+          if (!tsToken) { alert('Verification failed. Please try again.'); resetModel(); return; }
+          trainBtn.textContent = '🧠 Training your model (~15-30s)...';
           const resp = await fetch('/api/train-custom', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: customText })
+            body: JSON.stringify({ text: customText, turnstileToken: tsToken })
           });
           const data = await resp.json();
           if (!resp.ok) { alert(data.error || 'Training failed'); resetModel(); return; }
@@ -166,9 +203,13 @@
       }
 
       trainBtn.disabled = true;
-      trainBtn.textContent = '🧠 Loading neural network...';
+      trainBtn.textContent = '🔒 Verifying...';
 
       try {
+        const tsToken = await getTurnstileToken();
+        if (!tsToken) { alert('Verification failed. Please try again.'); resetModel(); return; }
+        trainBtn.textContent = '🧠 Loading neural network...';
+
         const infoResp = await fetch('/api/model-info');
         const info = await infoResp.json();
 
@@ -183,7 +224,7 @@
         const testResp = await fetch('/api/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: activePreset === 'python' ? 'def ' : 'The ', preset: activePreset, temperature: 0.7, length: 150 })
+          body: JSON.stringify({ prompt: activePreset === 'python' ? 'def ' : 'The ', preset: activePreset, temperature: 0.7, length: 150, turnstileToken: tsToken })
         });
         const testData = await testResp.json();
         const elapsed = (performance.now() - t0).toFixed(0);
