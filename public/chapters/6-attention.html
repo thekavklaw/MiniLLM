@@ -20,21 +20,308 @@
       <p>The secret ingredient of transformers: letting each word decide which other words matter most.</p>
     </div>
 
+    <!-- ============================================================ -->
+    <!-- BIG INTRO: WHY ATTENTION MATTERS                              -->
+    <!-- ============================================================ -->
     <div class="section fade-in-up delay-1">
-      <h2>📚 The Library Metaphor</h2>
-      <p>Imagine you're in a library looking for a book. You have a <strong style="color:var(--purple)">Query</strong> (what you're looking for), each book has a <strong style="color:var(--blue)">Key</strong> (its title), and a <strong style="color:var(--orange)">Value</strong> (its contents). You compare your query to each key to decide which books to read most carefully.</p>
-      <p>Attention works the same way. Each word creates a query, key, and value. The query-key match determines how much attention to pay.</p>
+      <h2>🧠 The Problem With Reading Left to Right</h2>
+
+      <p>
+        In the last chapter, we turned words into numbers — vectors that capture meaning.
+        Now we need the neural network to actually <em>understand</em> sentences. And
+        understanding a sentence means understanding how words <strong>relate to each
+        other</strong>.
+      </p>
+
+      <p>
+        Consider this sentence: <em>"The animal didn't cross the street because
+        <strong>it</strong> was too tired."</em> What does "it" refer to? The animal,
+        obviously. But how does a computer figure that out? "It" and "animal" are
+        separated by several words. The computer needs some way to connect them.
+      </p>
+
+      <p>
+        Before 2017, the most popular approach was called a <strong>Recurrent Neural
+        Network (RNN)</strong>. An RNN reads a sentence one word at a time, from left
+        to right, like a person reading aloud. It keeps a running "memory" of what it's
+        read so far. Sounds reasonable, right?
+      </p>
+
+      <p>
+        The problem: <strong>RNNs forget</strong>. By the time an RNN reaches word #50
+        in a sentence, its memory of word #1 has faded to almost nothing — like trying
+        to remember the first word of a paragraph after reading the whole thing. For
+        short sentences this was okay. For anything longer — articles, conversations,
+        code — it fell apart.
+      </p>
+
+      <p>
+        In 2017, researchers at Google published a paper with one of the most famous
+        titles in AI history: <strong>"Attention Is All You Need."</strong> Their idea
+        was radical: throw away the left-to-right reading entirely. Instead, let every
+        word look at <em>every other word</em> directly, all at once, regardless of
+        distance. Word #50 can look right back at word #1 just as easily as it looks at
+        word #49.
+      </p>
+
+      <p>
+        This mechanism is called <strong>attention</strong>, and it is <em>the</em> key
+        innovation that made GPT, ChatGPT, and virtually every modern language model
+        possible. Without attention, none of this works. It is, quite literally, all
+        you need.
+      </p>
     </div>
 
+    <!-- ============================================================ -->
+    <!-- QUERY / KEY / VALUE                                           -->
+    <!-- ============================================================ -->
+    <div class="section fade-in-up delay-1">
+      <h2>📚 Query, Key, and Value: The Party Analogy</h2>
+
+      <p>
+        Attention has three key components, and they have slightly intimidating names:
+        <strong style="color:var(--purple)">Query</strong>,
+        <strong style="color:var(--blue)">Key</strong>, and
+        <strong style="color:var(--orange)">Value</strong>. But the concept is
+        surprisingly intuitive once you hear the right analogy.
+      </p>
+
+      <h3>Imagine you're at a party 🎉</h3>
+
+      <p>
+        You walk into a room full of people. You have a question on your mind — say,
+        <em>"Who here knows about cooking?"</em> That question is your
+        <strong style="color:var(--purple)">Query</strong>.
+      </p>
+
+      <p>
+        Each person at the party is wearing a name tag that describes their expertise.
+        One tag says "Chef," another says "Programmer," another says "Artist." These
+        name tags are the <strong style="color:var(--blue)">Keys</strong>.
+      </p>
+
+      <p>
+        You scan the room, comparing your Query to each person's Key. "Chef" matches
+        your cooking question really well! "Programmer" doesn't match at all.
+        "Artist"... maybe a little (food art is a thing). Based on these matches, you
+        decide how much attention to pay to each person.
+      </p>
+
+      <p>
+        Then you listen to what each person actually has to say. The chef tells you an
+        amazing recipe. The programmer talks about code (not useful for your cooking
+        question). The artist mentions food presentation. What they tell you is the
+        <strong style="color:var(--orange)">Value</strong> — the actual useful
+        information you gather.
+      </p>
+
+      <p>
+        Your final "answer" is a blend of everyone's Values, weighted by how well their
+        Key matched your Query. You pay 80% attention to the chef, 5% to the programmer,
+        and 15% to the artist.
+      </p>
+
+      <h3>How this works for words</h3>
+
+      <p>
+        In a neural network, <strong>every word</strong> in a sentence creates all three:
+        a Query, a Key, and a Value. These are just vectors (lists of numbers) computed
+        from the word's embedding.
+      </p>
+
+      <ul>
+        <li>
+          The <strong style="color:var(--purple)">Query</strong> says: <em>"What kind of
+          information am I looking for?"</em>
+        </li>
+        <li>
+          The <strong style="color:var(--blue)">Key</strong> says: <em>"Here's what kind
+          of information I have."</em>
+        </li>
+        <li>
+          The <strong style="color:var(--orange)">Value</strong> says: <em>"And here's
+          the actual information itself."</em>
+        </li>
+      </ul>
+
+      <p>
+        For each word, its Query is compared to <em>every other word's</em> Key. The
+        better the match, the more attention is paid. The output for that word is a
+        weighted blend of all the Values, with the weights determined by the
+        Query-Key matches.
+      </p>
+
+      <p>
+        So in our example sentence — "The animal didn't cross the street because it was
+        too tired" — when the network processes the word "it," its Query essentially asks
+        <em>"who or what am I referring to?"</em> The word "animal" has a Key that
+        matches well, so "it" pays a lot of attention to "animal." The network
+        successfully connects the two words, even though they're far apart.
+      </p>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- HEATMAP EXPLANATION + DEMO                                    -->
+    <!-- ============================================================ -->
     <div class="section fade-in-up delay-2">
       <h2>🔥 Interactive Attention Heatmap</h2>
-      <p>Type a sentence and see which words attend to which. Brighter cells = more attention.</p>
+
+      <h3>How to read this visualization</h3>
+
+      <p>
+        The grid below is called an <strong>attention heatmap</strong>. Here's how to
+        read it:
+      </p>
+
+      <ul>
+        <li>
+          <strong>Each row</strong> represents a word asking the question: <em>"Which
+          other words should I pay attention to?"</em>
+        </li>
+        <li>
+          <strong>Each column</strong> represents a word that might get attended to.
+        </li>
+        <li>
+          <strong>The color intensity</strong> shows how much attention is being paid.
+          <strong>Darker purple = more attention.</strong> Lighter or white = less
+          attention.
+        </li>
+        <li>
+          <strong>The diagonal</strong> (top-left to bottom-right) is often strong
+          because words tend to pay attention to <em>themselves</em> — which makes sense,
+          since a word's own meaning is always relevant.
+        </li>
+        <li>
+          <strong>Off-diagonal bright cells</strong> show where words are paying attention
+          to <em>other</em> words. These are the interesting ones — they reveal which
+          words the network thinks are related.
+        </li>
+      </ul>
+
+      <p>
+        Type a sentence below and watch the attention pattern change. Try sentences
+        where pronouns refer to earlier nouns (like "The dog chased the cat because it
+        was fast") and see if the heatmap picks up on the connection.
+      </p>
 
       <div class="interactive-area">
         <input type="text" id="attn-input" value="The cat sat on the mat" style="width:100%;padding:12px 16px;border:2px solid var(--card-border);border-radius:var(--radius-sm);font-family:inherit;font-size:1rem;outline:none;" placeholder="Type a sentence...">
-        <canvas id="attn-canvas" width="700" height="500" style="margin-top:16px;"></canvas>
+        <canvas id="attn-canvas" width="800" height="550" style="margin-top:16px;"></canvas>
         <div class="narration" style="margin-top:12px;">Each row shows how much a word "attends to" every other word. The diagonal is often strong (words attend to themselves). Related words like "cat" and "sat" may show stronger connections.</div>
       </div>
+
+      <p style="margin-top:18px;">
+        <strong>What just happened?</strong> You're seeing a simulated version of what
+        happens inside a transformer's attention layer. Each word computed a Query and
+        compared it to every other word's Key. The resulting weights — shown as the
+        colored cells — determine how much information flows between words. This is how
+        the network builds an understanding of the <em>relationships</em> between words,
+        not just the individual words themselves.
+      </p>
+
+      <p>
+        Note: this demo uses a simplified heuristic to generate plausible attention
+        patterns. Real attention weights are learned during training and can be
+        surprisingly complex — sometimes capturing grammar, sometimes meaning, sometimes
+        patterns that humans can't easily interpret.
+      </p>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- MULTI-HEAD ATTENTION                                          -->
+    <!-- ============================================================ -->
+    <div class="section fade-in-up delay-2">
+      <h2>🎭 Multi-Head Attention: Looking at Everything at Once</h2>
+
+      <p>
+        Here's something fascinating: in GPT and other real transformer models, there
+        isn't just <em>one</em> attention mechanism running — there are <strong>many
+        running in parallel</strong>. These are called <strong>attention heads</strong>.
+      </p>
+
+      <p>
+        Why? Because words relate to each other in <em>many different ways</em>
+        simultaneously. Think about the sentence "The tired old dog slowly chased the
+        energetic young cat." There are multiple types of relationships happening:
+      </p>
+
+      <ul>
+        <li>
+          <strong>Grammatical relationships:</strong> "dog" is the subject of "chased."
+          "cat" is the object. One attention head might specialize in tracking
+          subject-verb-object structure.
+        </li>
+        <li>
+          <strong>Descriptive relationships:</strong> "tired," "old," and "slowly" all
+          describe the dog's side of the action. Another head might specialize in
+          connecting adjectives and adverbs to the nouns and verbs they modify.
+        </li>
+        <li>
+          <strong>Positional relationships:</strong> Maybe a head just pays attention to
+          nearby words — the words immediately before and after.
+        </li>
+        <li>
+          <strong>Semantic relationships:</strong> "dog" and "cat" are both animals.
+          "chased" implies a specific kind of interaction between them. Another head
+          might focus on these meaning-based connections.
+        </li>
+      </ul>
+
+      <p>
+        A single attention head can only learn one "style" of paying attention. By
+        running many heads at once (GPT-3 uses <strong>96 attention heads</strong>
+        per layer!), the model can capture all these different relationship types
+        simultaneously. Each head produces its own set of attention weights, and their
+        outputs are combined to give the final, rich representation of each word.
+      </p>
+
+      <p>
+        It's like having 96 different people at the party, each listening for something
+        different — one is listening for topic relevance, another for emotional tone,
+        another for who's replying to whom, and so on. Together, they build a much
+        fuller picture than any single listener could.
+      </p>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- WHAT YOU LEARNED                                              -->
+    <!-- ============================================================ -->
+    <div class="section fade-in-up delay-2">
+      <h2>🎯 What You Just Learned</h2>
+
+      <p>This chapter covered the single most important idea in modern AI. Let's recap:</p>
+
+      <ol>
+        <li>
+          <strong>The old approach (RNNs) read left to right</strong> and forgot the
+          beginning of long sentences. This was a fundamental limitation.
+        </li>
+        <li>
+          <strong>Attention lets every word look at every other word</strong> directly,
+          regardless of how far apart they are. This solved the forgetting problem.
+        </li>
+        <li>
+          <strong>Each word creates three things:</strong> a Query (what it's looking
+          for), a Key (what it offers), and a Value (its actual information). The
+          Query-Key match determines attention weights, and the Values are what gets
+          passed along.
+        </li>
+        <li>
+          <strong>Attention heatmaps</strong> visualize these relationships as a grid,
+          where each cell shows how much one word attends to another.
+        </li>
+        <li>
+          <strong>Multi-head attention</strong> runs many attention mechanisms in
+          parallel, each specializing in a different type of relationship (grammar,
+          meaning, position, etc.).
+        </li>
+      </ol>
+
+      <p>
+        In the next chapter, we'll put it all together and see how attention fits into
+        the full <strong>Transformer architecture</strong> — the complete blueprint
+        behind GPT, ChatGPT, and all their cousins.
+      </p>
     </div>
   </div>
 

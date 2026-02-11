@@ -20,6 +20,97 @@
       <p>Build any network you want. Choose a dataset, tweak the architecture, and watch it learn in real time.</p>
     </div>
 
+    <!-- ────────────────────────────────────────────── -->
+    <!-- SECTION 1: Welcome to the Playground -->
+    <!-- ────────────────────────────────────────────── -->
+    <div class="section fade-in-up delay-1">
+      <h2>🎮 Welcome to Your Neural Network Sandbox</h2>
+
+      <p>This is where everything from the previous chapters comes together. The playground below is a <strong>sandbox</strong> — a place where you can experiment freely, break things, and learn by doing. There are no wrong answers here. Try wild combinations! Make the network fail spectacularly! That's how you build intuition.</p>
+
+      <p>Real machine learning engineers spend a <em>huge</em> amount of time doing exactly this — tweaking settings, running experiments, watching what happens, and building an instinct for what works. This playground gives you that same experience, compressed into a few minutes instead of a few years. Every great ML practitioner started by playing.</p>
+
+      <p>Before you start clicking, let's take a tour of what you're looking at. The playground has <strong>three panels</strong>, each showing you something different about the network:</p>
+
+      <h3>📋 Left Panel — Configuration</h3>
+      <p>This is your control center. You'll choose what kind of data the network should learn, how big the network should be, and how it should learn. Think of it as the "settings" for your experiment. Every option is explained in detail below — don't worry if the names sound intimidating, they're simpler than they sound.</p>
+      <p>The left panel has four cards: <strong>Dataset</strong> (pick your puzzle), <strong>Architecture</strong> (design the network shape), <strong>Settings</strong> (fine-tune learning behavior), and <strong>Controls</strong> (play/pause/reset). You'll also see live stats at the bottom showing the current epoch (training step), loss (how wrong the network is), and parameter count (total number of knobs the network is adjusting).</p>
+
+      <h3>🎨 Center Panel — The Decision Boundary</h3>
+      <p>This is the main event! The large colorful canvas shows you <strong>what the network "sees."</strong> Here's how to read it:</p>
+      <ul>
+        <li><strong>Purple/dark regions</strong> = the network predicts "class 1" here</li>
+        <li><strong>Light/pale regions</strong> = the network predicts "class 0" here</li>
+        <li><strong>Colored dots</strong> = the actual training data. Each dot belongs to one of two classes.</li>
+        <li>A well-trained network will have purple regions surrounding class-1 dots and light regions surrounding class-0 dots.</li>
+      </ul>
+      <p>As the network trains, watch the colors shift and flow like liquid — that's the network literally <em>changing its mind</em> about how to classify different regions of space. Early on, the boundary is usually a simple line or blob. As training progresses, it gets more detailed, curving around individual data points. This is the network learning!</p>
+      <p>If you see the boundary getting <em>too</em> complex — curving wildly between individual dots — that's a sign of <strong>overfitting</strong> (the network memorizing instead of learning). We'll talk about how to fix that with regularization below.</p>
+
+      <h3>📊 Right Panel — Network Structure &amp; Loss</h3>
+      <p>The top card shows a <strong>diagram of your network</strong> — circles are neurons, lines are connections (weights). The thicker or more colorful a connection, the stronger that weight is. When you change the architecture (add layers, adjust neurons), this diagram updates instantly so you can see what you're building.</p>
+      <p>Below the network diagram is the <strong>loss curve</strong> — this is your progress tracker. The x-axis is time (training epochs) and the y-axis is how wrong the network is. You want this line to go <strong>down and stay down</strong>. When it flattens near zero, your network has learned the pattern. If it bounces around instead of going down, your learning rate is probably too high. If it barely moves, your learning rate is too low or your network is too small for the problem.</p>
+      <p>Below both of those is a <strong>narration box</strong> that gives you a plain-English description of what's happening during training. It'll tell you when the network is just guessing, when it's making progress, and when it's nailed the dataset.</p>
+    </div>
+
+    <!-- ────────────────────────────────────────────── -->
+    <!-- SECTION 2: Understanding Every Setting -->
+    <!-- ────────────────────────────────────────────── -->
+    <div class="section fade-in-up delay-1">
+      <h2>⚙️ Understanding Every Setting</h2>
+
+      <p>Let's go through each option so you know exactly what you're tweaking.</p>
+
+      <h3>📐 Dataset</h3>
+      <p>The <strong>dataset</strong> is the shape of data the network needs to learn to separate. Think of it as the "puzzle" you're giving the network. Each dataset places dots on the canvas in a different pattern, and the network's job is to draw a boundary between the two groups.</p>
+      <ul>
+        <li><strong>Circle</strong> — One class forms a ring around the other. Like a bullseye target. A simple network can handle this.</li>
+        <li><strong>XOR</strong> — The diagonal pattern from Chapter 3. Dots in opposite corners belong to the same class. Needs at least one hidden layer.</li>
+        <li><strong>Spiral</strong> — Two classes wound around each other like a cinnamon roll. This is <em>hard</em> — the boundary needs to twist and turn, requiring multiple layers.</li>
+        <li><strong>Gaussian</strong> — Two overlapping blobs of dots. Like two clouds that partially overlap. Some points near the boundary are genuinely ambiguous.</li>
+        <li><strong>Checkerboard</strong> — A grid pattern like a chess board. Each square alternates between classes. Very hard — the network needs to learn multiple separate regions.</li>
+      </ul>
+
+      <h3>🏗️ Architecture (Hidden Layers)</h3>
+      <p>This controls how many <strong>hidden layers</strong> your network has and how many <strong>neurons</strong> are in each one. Use the <strong>"+ Layer"</strong> and <strong>"- Layer"</strong> buttons to add or remove layers, and the sliders to set how many neurons each layer has (from 1 to 12).</p>
+      <p>Think of it like this: each layer is a level of thinking. One layer can detect simple features ("is the dot on the left or right?"). Two layers can combine those features ("is the dot in the top-left quadrant?"). Three layers can detect even more abstract patterns ("is the dot on this spiral arm?").</p>
+      <p><strong>More layers</strong> = can learn more complex patterns, but takes longer to train. <strong>More neurons per layer</strong> = more nuance at each thinking level.</p>
+
+      <h3>📏 Learning Rate (LR)</h3>
+      <p>The <strong>learning rate</strong> controls how big each adjustment step is when the network learns. Imagine you're walking toward a target with your eyes closed, and after each step someone tells you which direction to go:</p>
+      <ul>
+        <li><strong>High learning rate</strong> (like 0.5 or 1.0) = taking big steps. You'll get close fast, but you might <em>overshoot</em> and keep jumping back and forth past the target.</li>
+        <li><strong>Low learning rate</strong> (like 0.001) = taking tiny baby steps. You'll get there eventually, but it takes <em>forever</em>.</li>
+        <li><strong>Just right</strong> (usually 0.01–0.1) = steady progress toward the goal.</li>
+      </ul>
+      <p>Try cranking the learning rate to 1.0 and watch the loss curve bounce around wildly. Then try 0.001 and watch it barely move. Finding the sweet spot is a real skill in machine learning!</p>
+
+      <h3>🔧 Activation Function</h3>
+      <p>The <strong>activation function</strong> is the "squishing function" each neuron uses to transform its output. You met these in earlier chapters:</p>
+      <ul>
+        <li><strong>ReLU</strong> — Keeps positives, zeros out negatives. Fast, sharp boundaries. The default for most modern networks.</li>
+        <li><strong>Sigmoid</strong> — Squishes everything between 0 and 1. Smooth, gentle curves. Can be slow to learn in deep networks.</li>
+        <li><strong>Tanh</strong> — Squishes everything between -1 and +1. Like sigmoid but centered at zero. Often works better than sigmoid for hidden layers.</li>
+      </ul>
+
+      <h3>🛡️ L2 Regularization</h3>
+      <p><strong>L2 regularization</strong> is a technique that prevents the network from <strong>memorizing</strong> the training data too exactly. It's like telling a student: <em>"Learn the concepts, not the specific answers to the practice test."</em></p>
+      <p>Without regularization, a powerful network might create a super-complex, wiggly boundary that perfectly fits every single training dot — including the noisy or misleading ones. This is called <strong>overfitting</strong>. L2 regularization adds a small penalty for having large weights, which encourages the network to keep things simpler.</p>
+      <ul>
+        <li><strong>L2 = 0</strong> — No regularization. The network can go wild.</li>
+        <li><strong>L2 = small value (0.001–0.005)</strong> — Gentle nudge toward simplicity. Usually a good idea.</li>
+        <li><strong>L2 = large value (0.01+)</strong> — Strong simplicity constraint. The boundary will be very smooth, but might be <em>too</em> simple to fit the data well (called <strong>underfitting</strong>).</li>
+      </ul>
+    </div>
+
+    <!-- ────────────────────────────────────────────── -->
+    <!-- THE PLAYGROUND -->
+    <!-- ────────────────────────────────────────────── -->
+    <div class="section fade-in-up delay-1">
+      <h2>🧪 The Playground</h2>
+      <p>Alright, you know what everything does — now go play! Hit <strong>▶ Train</strong> to start, <strong>⏸ Pause</strong> to stop and think, and <strong>Reset Network</strong> to start fresh with new random weights.</p>
+    </div>
+
     <div class="interactive-area fade-in-up delay-1">
       <div class="playground-layout">
         <!-- Left sidebar: controls -->
@@ -101,6 +192,71 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- ────────────────────────────────────────────── -->
+    <!-- SECTION: Try This! -->
+    <!-- ────────────────────────────────────────────── -->
+    <div class="section fade-in-up delay-2">
+      <h2>🧪 Try This!</h2>
+
+      <p>Not sure where to start? Here are some guided experiments that will teach you a ton:</p>
+
+      <h3>Experiment 1: The Power of Layers</h3>
+      <ol>
+        <li>Select the <strong>Spiral</strong> dataset.</li>
+        <li>Remove layers until you have just <strong>1 hidden layer</strong> with 4 neurons.</li>
+        <li>Hit Train. Watch it struggle — the boundary can't twist enough to follow the spiral.</li>
+        <li>Now reset, add a second layer (+ Layer button), and train again. Notice the improvement.</li>
+        <li>Add a third layer. Now the network can trace the spiral beautifully!</li>
+      </ol>
+      <p><strong>Lesson:</strong> More layers let the network draw increasingly complex boundaries. But each layer adds training time and parameters.</p>
+
+      <h3>Experiment 2: Learning Rate Gone Wrong</h3>
+      <ol>
+        <li>Use the <strong>Circle</strong> dataset with 2 layers of 4 neurons each.</li>
+        <li>Set the learning rate to <strong>1.0</strong> (drag the LR slider all the way right).</li>
+        <li>Hit Train. Watch the loss curve — it bounces wildly instead of going down smoothly!</li>
+        <li>Reset. Now set LR to <strong>0.001</strong>. Train. The loss drops... but painfully slowly.</li>
+        <li>Reset. Try <strong>0.05</strong>. Smooth, steady learning. Just right!</li>
+      </ol>
+      <p><strong>Lesson:</strong> Learning rate is one of the most important settings in machine learning. Too high and the network can't settle down. Too low and you'll be waiting all day.</p>
+
+      <h3>Experiment 3: Overfitting vs. Regularization</h3>
+      <ol>
+        <li>Select the <strong>Gaussian</strong> dataset (two overlapping blobs).</li>
+        <li>Use 3 layers with lots of neurons (like 8, 8, 8). Keep L2 at 0.</li>
+        <li>Train for a while. Notice how the boundary gets <em>really</em> wiggly, trying to perfectly classify every single dot — even the ones deep in the "wrong" territory.</li>
+        <li>Now reset, set <strong>L2 to 0.005</strong>, and train again. The boundary is smoother and more sensible — it accepts that some dots near the overlap are just hard to classify.</li>
+      </ol>
+      <p><strong>Lesson:</strong> A network that's too powerful will memorize noise. Regularization keeps it honest.</p>
+
+      <h3>Experiment 4: The Impossible Checkerboard</h3>
+      <ol>
+        <li>Select the <strong>Checkerboard</strong> dataset.</li>
+        <li>Start with 1 layer, 4 neurons. Train. It barely makes a dent!</li>
+        <li>Try 3 layers (8, 6, 4) with ReLU. Train for a while. It should start to carve out the checkerboard pattern, though it's tough.</li>
+        <li>This is one of the hardest patterns — it shows why some problems need really deep networks.</li>
+      </ol>
+    </div>
+
+    <!-- ────────────────────────────────────────────── -->
+    <!-- SECTION: What You Just Learned -->
+    <!-- ────────────────────────────────────────────── -->
+    <div class="section fade-in-up delay-2">
+      <h2>📝 What You Just Learned</h2>
+
+      <ul>
+        <li>A neural network <strong>playground</strong> lets you experiment with different datasets, architectures, and settings to build intuition about how networks learn.</li>
+        <li>The <strong>decision boundary</strong> (the colored canvas) shows you what the network has learned — where it draws the line between the two classes.</li>
+        <li>The <strong>loss curve</strong> tells you how the network is progressing. Down = good. Flat near zero = done learning. Bouncing = learning rate might be too high.</li>
+        <li><strong>Harder datasets</strong> (spiral, checkerboard) need deeper networks with more layers and neurons.</li>
+        <li>The <strong>learning rate</strong> is a critical knob — too high and the network overshoots, too low and it crawls.</li>
+        <li><strong>L2 regularization</strong> prevents overfitting by encouraging simpler boundaries.</li>
+        <li>There's no single "best" network for everything — the right architecture depends on the problem. <strong>Experimentation is key!</strong></li>
+      </ul>
+
+      <p>You now have hands-on experience with the core concepts of neural networks: neurons, layers, activation functions, learning rates, and regularization. In the next chapter, we'll take a fascinating leap from numbers to <strong>words</strong> — and see how neural networks can understand language. 🚀</p>
     </div>
   </div>
 

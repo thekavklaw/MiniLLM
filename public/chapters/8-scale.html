@@ -19,27 +19,120 @@
       <p>Our playground network had ~50 parameters. GPT-4 has over a trillion. Let's visualize what scale really means.</p>
     </div>
 
+    <!-- ========== INTRO ========== -->
+    <div class="section fade-in-up delay-1">
+      <h2>🧩 The Full Picture</h2>
+
+      <p>
+        Take a moment to appreciate how far you've come. You've now seen <strong>every building block</strong> that
+        makes up a modern AI language model:
+      </p>
+      <ul>
+        <li><strong>Neurons</strong> (Chapter 1) — the basic unit that takes inputs, multiplies by weights, and fires</li>
+        <li><strong>Learning</strong> (Chapter 2) — how a network adjusts its weights to get better at a task</li>
+        <li><strong>Layers</strong> (Chapter 3) — stacking neurons into deep networks that can learn complex patterns</li>
+        <li><strong>The Playground</strong> (Chapter 4) — training a tiny network hands-on</li>
+        <li><strong>Tokenization &amp; Embeddings</strong> (Chapter 5) — turning words into numbers the model can work with</li>
+        <li><strong>Attention</strong> (Chapter 6) — letting words look at each other to understand context</li>
+        <li><strong>The Transformer</strong> (Chapter 7) — the architecture that puts it all together</li>
+      </ul>
+      <p>
+        Now let's zoom out and see what happens when you take these same building blocks and scale them up
+        <strong>astronomically</strong>. Because the difference between our tiny playground and GPT-4 isn't
+        a difference in <em>kind</em> — it's a difference in <em>scale</em>. The same neurons, the same attention,
+        the same Transformer architecture. Just… unimaginably more of it. And that scale is what creates something
+        that can write poetry, debug code, explain quantum physics, and hold a conversation that feels genuinely intelligent.
+      </p>
+    </div>
+
+    <!-- ========== PARAMETER SCALE ========== -->
     <div class="section fade-in-up delay-1">
       <h2>📊 Parameter Count Comparison</h2>
-      <p>Each model below is drawn to scale (logarithmic). Hover to see details.</p>
+      <p>
+        A <strong>parameter</strong> is a single number inside the model — one weight or one bias. Our playground
+        network in Chapter 4 had about 50 parameters. That's like a tiny calculator. Now look at how real models compare:
+      </p>
 
       <div class="interactive-area">
-        <canvas id="scale-canvas" width="800" height="400"></canvas>
+        <canvas id="scale-canvas" width="900" height="400"></canvas>
       </div>
+
+      <p>
+        Let's put <strong>1.8 trillion parameters</strong> into perspective, because that number is so large it's
+        almost meaningless on its own:
+      </p>
+      <ul>
+        <li>🏖️ If each parameter were a <strong>grain of sand</strong>, GPT-4 would fill a small beach — about 7,200 cubic meters of sand</li>
+        <li>🌍 If you printed each parameter as a <strong>single digit on paper</strong>, the paper would stretch from the Earth to the Moon — and back — multiple times</li>
+        <li>⏱️ If you could count one parameter per second, it would take you over <strong>57,000 years</strong> to count them all</li>
+        <li>💾 Stored as 16-bit numbers, GPT-4's parameters take up roughly <strong>3.6 terabytes</strong> — that's about 900 high-definition movies' worth of data, just for the weights</li>
+      </ul>
+      <p>
+        And remember: each of those 1.8 trillion parameters was <em>learned</em> through the training process you saw
+        in Chapter 2. The model started with random numbers and gradually adjusted every single parameter — trillions
+        of tiny nudges — until it could predict the next word accurately. The fact that this process works at all is,
+        frankly, astonishing.
+      </p>
     </div>
 
+    <!-- ========== TRAINING DATA ========== -->
     <div class="section fade-in-up delay-2">
       <h2>📚 Training Data Scale</h2>
-      <p>More parameters need more data. Here's how much text these models consumed during training.</p>
+      <p>
+        More parameters need more data to learn from. You can't fill a massive brain with a tiny textbook — you need
+        a <em>library</em>. Here's how much text these models consumed during training:
+      </p>
 
       <div class="interactive-area">
-        <canvas id="data-canvas" width="800" height="300"></canvas>
+        <canvas id="data-canvas" width="900" height="300"></canvas>
+      </div>
+
+      <p>
+        GPT-4 was trained on a staggering <strong>~13 trillion tokens</strong> of text. Where did all this text come from?
+        Essentially, most of the public internet:
+      </p>
+      <ul>
+        <li>📖 <strong>Wikipedia</strong> — millions of articles in dozens of languages</li>
+        <li>📚 <strong>Books</strong> — fiction, non-fiction, textbooks, manuals</li>
+        <li>🎓 <strong>Academic papers</strong> — research from every field of science</li>
+        <li>💻 <strong>Code repositories</strong> — GitHub, StackOverflow, documentation (this is how it learns to code!)</li>
+        <li>💬 <strong>Forums &amp; discussions</strong> — Reddit, Quora, and similar platforms</li>
+        <li>📰 <strong>News articles</strong> — journalism from thousands of publications</li>
+        <li>🌐 <strong>Web pages</strong> — billions of crawled web pages from across the internet</li>
+      </ul>
+      <p>
+        How much is 13 trillion tokens? One token is roughly ¾ of a word, so that's about <strong>10 trillion words</strong>,
+        or the equivalent of roughly <strong>50 million books</strong>. A fast human reader who reads one book per day
+        would need <strong>137,000 years</strong> to read all of GPT-4's training data. The entire written history of
+        human civilization is only about 5,000 years old. GPT-4 was trained on 27× more text than humans have been
+        writing for.
+      </p>
+
+      <div class="card" style="background: rgba(59,130,246,0.05); border: 1px solid rgba(59,130,246,0.2);">
+        <h3>💡 Why So Much Data?</h3>
+        <p>
+          Remember, the model learns by predicting the next word. To predict well, it needs to have seen enough examples
+          of every kind of text: scientific writing, casual conversation, poetry, legal documents, code, jokes, stories.
+          The more diverse the training data, the more versatile the model becomes. This is why GPT-4 can switch between
+          writing a haiku and explaining thermodynamics — it's seen millions of examples of both.
+        </p>
       </div>
     </div>
 
+    <!-- ========== RLHF ========== -->
     <div class="section fade-in-up delay-3">
       <h2>🎯 RLHF: Teaching AI to Be Helpful</h2>
-      <p>Raw language models just predict the next word. <strong>RLHF</strong> (Reinforcement Learning from Human Feedback) teaches them to be helpful, harmless, and honest.</p>
+      <p>
+        Here's a secret that surprises most people: after pre-training, a language model is <strong>not</strong> a
+        helpful assistant. It's a <strong>text predictor</strong>. If you type "What is the capital of France?" it
+        might respond with "What is the capital of Germany? What is the capital of Spain?" — because on the internet,
+        quiz questions are often followed by more quiz questions. It learned to predict <em>what text typically comes
+        next</em>, not to <em>answer your question</em>.
+      </p>
+      <p>
+        Turning a raw text predictor into the helpful, polite, safety-conscious assistant you know as ChatGPT or
+        Claude requires three additional stages of training:
+      </p>
 
       <div class="interactive-area">
         <div style="display:flex;gap:24px;flex-wrap:wrap;justify-content:center;">
@@ -61,11 +154,123 @@
         </div>
         <div class="narration" style="margin-top:16px;">This is why ChatGPT sounds helpful and polite — it's been trained with human feedback to prefer helpful, safe responses over raw text prediction.</div>
       </div>
+
+      <p>Let's unpack each stage:</p>
+
+      <div class="card" style="border-left:4px solid var(--blue);">
+        <h3>Stage 1: Pre-training — The Knowledge Phase</h3>
+        <p>
+          This is where the model reads those 13 trillion tokens and learns to predict the next word. After this stage,
+          the model has absorbed an enormous amount of <em>knowledge</em> — facts, grammar, reasoning patterns, code
+          syntax, multiple languages — but it has no idea how to be <em>helpful</em>. It's like a student who has read
+          every book in the library but has never had a conversation. It knows everything but can't communicate well.
+        </p>
+      </div>
+
+      <div class="card" style="border-left:4px solid var(--purple);">
+        <h3>Stage 2: Supervised Fine-Tuning (SFT) — Learning the Format</h3>
+        <p>
+          In this stage, human trainers write thousands of example conversations in the format: "User asks a question →
+          Assistant gives a helpful answer." The model is then trained on these examples, learning that when it sees a
+          user's message, it should respond like a helpful assistant — not continue generating random text.
+        </p>
+        <p>
+          Think of it like this: pre-training teaches you English, SFT teaches you how to be a good customer service
+          representative. You already know the language; now you're learning the <em>role</em>.
+        </p>
+      </div>
+
+      <div class="card" style="border-left:4px solid var(--orange);">
+        <h3>Stage 3: RLHF — The Secret Sauce</h3>
+        <p>
+          <strong>RLHF</strong> stands for <strong>Reinforcement Learning from Human Feedback</strong>, and it's what
+          makes the difference between a decent chatbot and a great one. Here's how it works:
+        </p>
+        <ol>
+          <li>The model generates <strong>multiple different responses</strong> to the same question</li>
+          <li>Human raters compare the responses and rank them: "Response A is better than Response B"</li>
+          <li>From thousands of these comparisons, a separate <strong>reward model</strong> is trained — a model that
+              can predict what humans would prefer</li>
+          <li>The main language model is then fine-tuned to maximize the reward model's score — essentially learning
+              to produce responses that humans would rate highly</li>
+        </ol>
+        <p>
+          This is why ChatGPT says <em>"I'm sorry, I can't help with that"</em> when you ask it to do something
+          harmful — it learned that refusing dangerous requests gets higher human approval scores. It's also why
+          the model is polite, provides caveats, and tries to be balanced — all of these behaviors were rewarded
+          by human raters during RLHF.
+        </p>
+      </div>
     </div>
 
+    <!-- ========== WHAT'S NEXT ========== -->
+    <div class="section fade-in-up delay-4">
+      <h2>🚀 What's Next? The Frontier of AI</h2>
+
+      <p>
+        The field of AI is moving at breakneck speed. Here are the most exciting frontiers being explored right now:
+      </p>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;">
+        <div class="card" style="border-left:4px solid #22c55e;">
+          <h3>🧠 Reasoning</h3>
+          <p>
+            Teaching models to <strong>"think step by step"</strong> (chain of thought reasoning) before answering.
+            Models like OpenAI's o1 and Claude can now solve complex math and logic problems by breaking them into steps,
+            just like a human would work through a problem on paper.
+          </p>
+        </div>
+        <div class="card" style="border-left:4px solid #3b82f6;">
+          <h3>👁️ Multimodal</h3>
+          <p>
+            Models that understand <strong>images, audio, and video</strong> — not just text. GPT-4V can describe photos,
+            Gemini can watch videos, and some models can generate images from text descriptions. The goal: AI that perceives
+            the world the way humans do.
+          </p>
+        </div>
+        <div class="card" style="border-left:4px solid #8b5cf6;">
+          <h3>🤖 Agents</h3>
+          <p>
+            AI that can <strong>use tools and take actions</strong> — browsing the web, writing and running code, sending
+            emails, booking flights. Instead of just answering questions, agents can actually <em>do things</em> in the
+            real world on your behalf.
+          </p>
+        </div>
+        <div class="card" style="border-left:4px solid #f97316;">
+          <h3>📏 Longer Context</h3>
+          <p>
+            Expanding how much text a model can process at once. Gemini 1.5 can handle <strong>1 million tokens</strong>
+            (~2,500 pages). Some research targets <strong>10 million+ tokens</strong> — enough to read every book in a
+            small library in a single prompt.
+          </p>
+        </div>
+        <div class="card" style="border-left:4px solid #ef4444;">
+          <h3>⚡ Smaller &amp; Faster</h3>
+          <p>
+            Making powerful models that can run on <strong>phones and laptops</strong> instead of massive data centers.
+            Techniques like quantization, distillation, and clever architectures are shrinking models from terabytes
+            to gigabytes while keeping them surprisingly capable.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== CONGRATULATIONS ========== -->
     <div style="text-align:center;margin-top:48px;" class="fade-in-up delay-4">
       <h2 style="font-size:2rem;">🎉 You Made It!</h2>
-      <p style="font-size:1.1rem;color:var(--text-light);max-width:600px;margin:16px auto 24px;">You've journeyed from a single neuron to understanding how GPT works. You now know more about AI than most people on Earth.</p>
+      <p style="font-size:1.1rem;color:var(--text-light);max-width:600px;margin:16px auto 24px;">
+        You've journeyed from a single neuron to understanding how GPT works.
+        You now know more about AI than most people on Earth. Seriously — the concepts you just learned
+        (neurons, backpropagation, embeddings, attention, Transformers, RLHF) are the same ones that
+        AI researchers and engineers work with every day. The only difference is scale.
+      </p>
+      <p style="font-size:1rem;color:var(--text-light);max-width:600px;margin:0 auto 24px;">
+        The next time someone asks "How does ChatGPT work?", you can tell them: it splits text into tokens,
+        converts them to number vectors, runs them through layers of attention and feed-forward networks
+        in a Transformer, and predicts the next word — one token at a time, billions of parameters,
+        trained on trillions of words, fine-tuned with human feedback. And you'll actually understand
+        what all of that means. 🧠
+      </p>
       <a href="/" class="btn btn-primary" style="font-size:1.1rem;padding:16px 36px;">← Back to Home</a>
     </div>
   </div>

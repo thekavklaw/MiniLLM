@@ -17,15 +17,68 @@
     <div class="chapter-header fade-in-up">
       <div class="chapter-number">Chapter 7</div>
       <h1>The Transformer</h1>
-      <p>Putting it all together: embeddings → attention → feed-forward → prediction.</p>
+      <p>The architecture behind ChatGPT, Claude, Gemini, and virtually every modern AI — explained from scratch.</p>
     </div>
 
+    <!-- ========== WHAT IS A TRANSFORMER? ========== -->
     <div class="section fade-in-up delay-1">
+      <h2>🏗️ What Is a Transformer?</h2>
+
+      <p>
+        If you've used ChatGPT, Claude, Gemini, or any modern AI chatbot, you've been talking to a <strong>Transformer</strong>.
+        A Transformer is not a specific product or company — it's an <strong>architecture</strong>, which is a fancy word for
+        "blueprint" or "design pattern." Just like every house needs a blueprint that says where the walls, doors, and windows go,
+        every AI language model needs an architecture that says how information flows through it. The Transformer is that blueprint,
+        and it's the one that nearly every major AI company uses today.
+      </p>
+
+      <p>
+        The Transformer was invented in 2017 by a team of researchers at Google, in a now-legendary paper titled
+        <strong>"Attention Is All You Need."</strong> Before this paper, AI researchers used older designs called
+        <strong>RNNs</strong> (Recurrent Neural Networks) and <strong>LSTMs</strong> (Long Short-Term Memory networks).
+        These older designs processed text <em>one word at a time</em>, like reading a book by looking at one word,
+        then the next, then the next. This was painfully slow, and worse — by the time the model reached the end of a
+        long sentence, it had often "forgotten" what was at the beginning. Imagine trying to understand a whole paragraph
+        but only being allowed to look at one word at a time, and your memory gets fuzzier with each new word. That was the problem.
+      </p>
+
+      <p>
+        Transformers solved this by processing <strong>all words at once</strong> (in parallel) and using
+        <strong>attention</strong> (Chapter 6!) to let every word "look at" every other word simultaneously. Instead of
+        reading left-to-right and hoping you remember the beginning, a Transformer sees the entire sentence at once and
+        decides which words are important for understanding each other word. This is not only more accurate — it's
+        <em>massively</em> faster, because modern computer chips (GPUs) are built to do many calculations at the same time.
+      </p>
+
+      <p>
+        A single <strong>Transformer layer</strong> has two main parts:
+      </p>
+      <ul>
+        <li><strong>Self-Attention</strong> — lets every word "talk to" every other word and gather context (you saw this in Chapter 6)</li>
+        <li><strong>Feed-Forward Network</strong> — a small neural network (like the ones from Chapters 1–3!) that processes each word individually, adding deeper understanding</li>
+      </ul>
+      <p>
+        Real language models stack <em>many</em> of these layers on top of each other. Each layer refines the model's
+        understanding a little more. Think of it like editing an essay: the first pass catches the basic meaning, the
+        second pass catches nuance, the third catches subtle implications, and so on. <strong>GPT-2</strong> stacks
+        <strong>12 layers</strong>. <strong>GPT-3</strong> stacks <strong>96 layers</strong>. <strong>GPT-4</strong>
+        reportedly uses <strong>120+ layers</strong>. More layers = deeper understanding, but also more computation.
+      </p>
+
+      <p>
+        Now let's watch a Transformer in action. The interactive demo below shows data flowing through a
+        <em>single</em> Transformer layer, processing the sentence <strong>"The cat sat on the ___"</strong> and
+        predicting what word comes next.
+      </p>
+    </div>
+
+    <!-- ========== INTERACTIVE DEMO ========== -->
+    <div class="section fade-in-up delay-2">
       <h2>⚡ Step Through a Transformer</h2>
-      <p>Watch data flow through each component of a transformer. Click "Next Step" to advance.</p>
+      <p>Click "Next Step" to advance through each stage. Read the explanation below the diagram at each step — it connects back to everything you've learned so far.</p>
 
       <div class="interactive-area">
-        <canvas id="transformer-canvas" width="800" height="500"></canvas>
+        <canvas id="transformer-canvas" width="900" height="600"></canvas>
         <div class="controls">
           <button class="btn btn-primary btn-sm" id="tf-next">Next Step →</button>
           <button class="btn btn-secondary btn-sm" id="tf-reset">Reset</button>
@@ -33,6 +86,179 @@
         </div>
         <div class="narration" id="tf-narration">Click "Next Step" to see how a transformer processes the sentence "The cat sat on the ___"</div>
       </div>
+
+      <!-- Step-by-step explanations that live OUTSIDE the JS -->
+      <div id="step-explainer" style="margin-top:24px;">
+        <div class="card" id="explain-0">
+          <h3>🔤 Before We Start: The Input</h3>
+          <p>We're going to feed the sentence <strong>"The cat sat on the ___"</strong> into a Transformer and see how it predicts the missing word. The blank (___) represents the position where the model will generate its prediction. Every time ChatGPT writes a word, it's doing exactly this — predicting what comes next based on everything before it.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== STEP DEEP-DIVES ========== -->
+    <div class="section fade-in-up delay-3">
+      <h2>🔍 What Each Step Does (In Detail)</h2>
+
+      <div class="card" style="border-left:4px solid #22c55e;">
+        <h3>Step 1 — Input (Tokenization)</h3>
+        <p>
+          Remember <strong>tokenization</strong> from Chapter 5? The very first thing a Transformer does is split the
+          input text into <strong>tokens</strong> — small pieces that the model can work with. In our example,
+          "The cat sat on the ___" becomes six tokens: <code>The</code>, <code>cat</code>, <code>sat</code>,
+          <code>on</code>, <code>the</code>, and <code>___</code>. In real models, tokens aren't always whole words —
+          a long word like "understanding" might become two tokens: "under" + "standing". But the idea is the same:
+          break text into manageable pieces.
+        </p>
+      </div>
+
+      <div class="card" style="border-left:4px solid #8b5cf6;">
+        <h3>Step 2 — Embedding (Numbers + Position)</h3>
+        <p>
+          Computers can't think about words directly — they need numbers. So each token gets converted into a
+          <strong>vector</strong> (a list of numbers) called an <strong>embedding</strong> (Chapter 5). The word "cat"
+          might become something like <code>[0.2, -0.5, 0.8, 1.1, ...]</code> — a list of hundreds of numbers that
+          capture its meaning. Words with similar meanings (like "cat" and "kitten") end up with similar numbers.
+        </p>
+        <p>
+          But there's a problem: if we just use embeddings, the model can't tell the difference between "The cat sat on the mat"
+          and "The mat sat on the cat" — the same words, different order, very different meaning! So the Transformer adds
+          <strong>positional encoding</strong> — extra numbers that tell the model <em>where</em> each word appears in the
+          sentence. Position 1, position 2, position 3, etc. Now the model knows both <em>what</em> each word means AND
+          <em>where</em> it appears.
+        </p>
+      </div>
+
+      <div class="card" style="border-left:4px solid #3b82f6;">
+        <h3>Step 3 — Self-Attention (Words Talk to Each Other)</h3>
+        <p>
+          This is the magic ingredient — the thing that makes Transformers special. In <strong>self-attention</strong>
+          (Chapter 6), every token gets to "look at" every other token and decide which ones are most relevant.
+        </p>
+        <p>
+          When processing the word "sat," the attention mechanism might learn: <em>"cat" is very relevant (it's the one
+          doing the sitting), and "on" is relevant (it tells us sat WHERE)."</em> Meanwhile, when processing "the" (the
+          second one), attention might focus on "___" because it's part of the phrase "the ___" — whatever the blank is,
+          "the" is its article.
+        </p>
+        <p>
+          The curved lines in the diagram represent these attention connections. Every word connects to every other word,
+          but some connections are stronger (higher attention weight) than others. This is how the model builds
+          <em>understanding</em> — not from individual words in isolation, but from how they relate to each other.
+        </p>
+      </div>
+
+      <div class="card" style="border-left:4px solid #f97316;">
+        <h3>Step 4 — Feed-Forward Network (Deep Processing)</h3>
+        <p>
+          After attention has mixed information between words, each word's representation passes through a small
+          <strong>feed-forward neural network</strong> — the same kind of network you built in Chapters 1–3!
+          It's just layers of neurons with weights and activation functions.
+        </p>
+        <p>
+          While attention lets words <em>share</em> information, the feed-forward network lets each word <em>think deeply</em>
+          about the information it gathered. Think of it this way: attention is like a group discussion where everyone shares
+          their perspective, and the feed-forward network is like going home afterward and really processing what you heard.
+          This step adds layers of nuance and abstract understanding that simple attention can't capture alone.
+        </p>
+      </div>
+
+      <div class="card" style="border-left:4px solid #ef4444;">
+        <h3>Step 5 — Output Layer (The Big Lookup)</h3>
+        <p>
+          Now we need to actually predict a word. The model takes the final vector (list of numbers) for the <code>___</code>
+          position and projects it through a massive lookup table called the <strong>vocabulary projection</strong>.
+          The model's vocabulary might contain 50,000+ words and word-pieces. For each one, the model calculates a score:
+          how likely is this word to come next?
+        </p>
+        <p>
+          These scores get converted to <strong>probabilities</strong> using a function called <strong>softmax</strong>,
+          which makes all the numbers positive and sum to 100%. So you might get: "mat" = 42%, "floor" = 18%, "table" = 12%,
+          "ground" = 9%, and thousands of other words sharing the remaining 19%.
+        </p>
+      </div>
+
+      <div class="card" style="border-left:4px solid #22c55e;">
+        <h3>Step 6 — Prediction (Picking a Word)</h3>
+        <p>
+          Finally, the model picks a word. The simplest approach is to always pick the word with the highest probability
+          (this is called <strong>greedy decoding</strong>). But often, models use <strong>temperature</strong> to add
+          controlled randomness — at low temperature, the model almost always picks the top word ("mat"); at high
+          temperature, it might surprise you with "blanket" or "carpet." This is the same temperature concept from our
+          training demos! Higher temperature = more creative but less predictable.
+        </p>
+      </div>
+    </div>
+
+    <!-- ========== HOW GPT GENERATES TEXT ========== -->
+    <div class="section fade-in-up delay-4">
+      <h2>🔄 How GPT Actually Generates Text</h2>
+
+      <p>
+        You might be wondering: okay, the Transformer predicted one word ("mat"). But ChatGPT writes entire paragraphs,
+        essays, even code. How does it go from predicting one word to writing a whole response?
+      </p>
+
+      <p>
+        The answer is beautifully simple: <strong>it does it one word at a time.</strong>
+      </p>
+
+      <p>
+        GPT is what's called an <strong>autoregressive</strong> model (a fancy word that just means "it uses its own
+        output as input"). Here's how it works:
+      </p>
+
+      <ol>
+        <li>Start with: <code>"The cat sat on the"</code> → Transformer predicts: <strong>"mat"</strong></li>
+        <li>Now feed in: <code>"The cat sat on the mat"</code> → Transformer predicts: <strong>"."</strong></li>
+        <li>Now feed in: <code>"The cat sat on the mat."</code> → Transformer predicts: <strong>"It"</strong></li>
+        <li>Now feed in: <code>"The cat sat on the mat. It"</code> → Transformer predicts: <strong>"was"</strong></li>
+        <li>...and so on, one token at a time, until it produces a special "stop" token or hits a length limit.</li>
+      </ol>
+
+      <p>
+        Every single time, the <em>entire</em> Transformer runs from scratch on the full input so far. When ChatGPT
+        is writing the 500th word of a response, it's looking at all 499 previous words through attention to decide what
+        word #500 should be. This is why longer responses take longer to generate — there's more to process each time.
+      </p>
+
+      <p>
+        The <strong>context window</strong> is the maximum number of tokens the model can see at once. It's like the
+        model's working memory. GPT-3.5 had a context window of about 4,000 tokens (~3,000 words). GPT-4 expanded
+        this to <strong>128,000 tokens</strong> — roughly <strong>300 pages of text</strong>. That means GPT-4 can
+        read an entire novel and answer questions about it, all in one go. Claude (the AI by Anthropic) supports up to
+        200,000 tokens. The bigger the context window, the more the model can "remember" during a single conversation.
+      </p>
+
+      <div class="card" style="background: rgba(139,92,246,0.05); border: 1px solid rgba(139,92,246,0.2);">
+        <h3>💡 Why This Matters</h3>
+        <p>
+          Every impressive thing a language model does — writing code, translating languages, summarizing documents,
+          having conversations — boils down to this simple loop: <strong>read everything so far → predict the next
+          token → add it → repeat</strong>. The "intelligence" comes from the Transformer's ability to understand
+          context through attention, refined through billions of parameters trained on enormous amounts of text.
+          That's it. That's the whole trick.
+        </p>
+      </div>
+    </div>
+
+    <!-- ========== RECAP ========== -->
+    <div class="section fade-in-up">
+      <h2>📝 Chapter 7 Recap</h2>
+      <ul>
+        <li>A <strong>Transformer</strong> is the architecture (blueprint) behind all modern language models like ChatGPT, Claude, and Gemini</li>
+        <li>It was invented in 2017 in the paper "Attention Is All You Need"</li>
+        <li>Each Transformer layer has <strong>self-attention</strong> (words share context) and a <strong>feed-forward network</strong> (deep processing)</li>
+        <li>Real models stack many layers: GPT-2 uses 12, GPT-3 uses 96, GPT-4 uses 120+</li>
+        <li>The data flow: Tokens → Embeddings → Self-Attention → Feed-Forward → Output Probabilities → Predicted Word</li>
+        <li>GPT generates text <strong>one token at a time</strong>, feeding its output back as input (autoregressive)</li>
+        <li>The <strong>context window</strong> limits how much text the model can see at once (GPT-4: 128K tokens ≈ 300 pages)</li>
+      </ul>
+
+      <p style="margin-top:16px; color:var(--text-light);">
+        Next up: Chapter 8 — we'll zoom out and see what happens when you scale these building blocks from our tiny
+        playground to the massive models powering today's AI revolution.
+      </p>
     </div>
   </div>
 

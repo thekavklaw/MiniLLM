@@ -20,9 +20,70 @@
       <p>One neuron can only draw a straight line. Stack them in layers, and they can learn anything.</p>
     </div>
 
+    <!-- ────────────────────────────────────────────── -->
+    <!-- SECTION 1: Introduction — Why One Neuron Isn't Enough -->
+    <!-- ────────────────────────────────────────────── -->
+    <div class="section fade-in-up delay-1">
+      <h2>🧠 Why One Neuron Isn't Enough</h2>
+
+      <p>In the previous chapters, you met a single <strong>neuron</strong> — a tiny math machine that takes in numbers, multiplies them by <strong>weights</strong>, adds a <strong>bias</strong>, and squishes the result through an <strong>activation function</strong>. That single neuron learned to do some cool things, like telling apart two groups of dots.</p>
+
+      <p>But here's the thing: a single neuron has a fundamental limitation. It can only draw <strong>one straight line</strong> (or, in higher dimensions, a flat surface) to separate things. Imagine you have a piece of paper with red dots and blue dots on it. A single neuron is like placing one straight ruler on the paper — everything on one side is "red" and everything on the other side is "blue." That works great when the dots are neatly separated!</p>
+
+      <p>But what happens when the dots are arranged in a pattern that <em>can't</em> be split with a single straight line? That's where things get interesting — and that's exactly what the <strong>XOR problem</strong> is all about.</p>
+    </div>
+
+    <!-- ────────────────────────────────────────────── -->
+    <!-- SECTION 2: What is XOR? -->
+    <!-- ────────────────────────────────────────────── -->
     <div class="section fade-in-up delay-1">
       <h2>❌ The XOR Problem</h2>
-      <p>XOR means "one or the other, but not both." A single neuron can't solve this — it needs a <strong>hidden layer</strong>. Watch the single neuron fail, then add a layer and see it succeed!</p>
+
+      <h3>What Does "XOR" Even Mean?</h3>
+
+      <p><strong>XOR</strong> stands for "<strong>exclusive or</strong>." In plain English, it means: <em>"one or the other, but not both."</em></p>
+
+      <p>Here's a real-world example that makes it crystal clear. Imagine a room with a light and <strong>two switches</strong> — one by each door. The light works like this:</p>
+
+      <ul>
+        <li><strong>Both switches OFF</strong> → Light is OFF ❌</li>
+        <li><strong>Switch A ON, Switch B OFF</strong> → Light is ON ✅</li>
+        <li><strong>Switch A OFF, Switch B ON</strong> → Light is ON ✅</li>
+        <li><strong>Both switches ON</strong> → Light is OFF ❌</li>
+      </ul>
+
+      <p>See the pattern? The light turns on when <em>exactly one</em> switch is flipped. If both are the same (both on or both off), the light stays off. That's XOR!</p>
+
+      <p>This might sound simple — and to your brain, it is. You can look at those four cases and instantly see the pattern. But for a single neuron, this is <strong>impossible to solve</strong>. Let's understand why.</p>
+
+      <h3>Why a Single Neuron Fails at XOR</h3>
+
+      <p>Remember: a single neuron can only draw <strong>one straight line</strong> to separate things. Let's visualize the four XOR cases as dots on a grid:</p>
+
+      <ul>
+        <li><strong>(0, 0) → OFF</strong> — bottom-left corner</li>
+        <li><strong>(0, 1) → ON</strong> — top-left corner</li>
+        <li><strong>(1, 0) → ON</strong> — bottom-right corner</li>
+        <li><strong>(1, 1) → OFF</strong> — top-right corner</li>
+      </ul>
+
+      <p>The "ON" dots are at the top-left and bottom-right. The "OFF" dots are at the bottom-left and top-right. They're arranged <strong>diagonally</strong> — like opposite corners of a checkerboard.</p>
+
+      <p>Now try to draw a single straight line that puts the two "ON" dots on one side and the two "OFF" dots on the other. Go ahead, imagine it. <strong>You can't do it!</strong> No matter how you angle the line, you'll always have one "wrong" dot on the wrong side. It's like trying to separate the black squares from the white squares on a checkerboard with one straight cut — geometrically impossible.</p>
+
+      <p>This was actually a huge deal in the history of artificial intelligence. In the 1960s, researchers realized that single-layer networks (called <strong>perceptrons</strong>) couldn't solve XOR, and many people thought neural networks were a dead end. It took decades before someone figured out the solution: <strong>add more layers</strong>.</p>
+
+      <h3>What the Visualization Shows</h3>
+
+      <p>Below you'll see two colored grids side by side. Here's how to read them:</p>
+
+      <ul>
+        <li>The <strong>colored grid</strong> shows the neuron's <strong>decision boundary</strong> — the regions where the network outputs different values. <strong>Purple/dark</strong> means the network says "1" (ON). <strong>Light/pale</strong> means the network says "0" (OFF).</li>
+        <li>The <strong>four dots</strong> on each grid are the four XOR inputs: (0,0), (0,1), (1,0), and (1,1).</li>
+        <li>For XOR to be solved correctly, the top-left and bottom-right dots need to be a <strong>different color</strong> from the bottom-left and top-right dots. You need a "checkerboard" pattern — two purple corners and two light corners.</li>
+      </ul>
+
+      <p>The <strong>left grid</strong> uses a single neuron. Watch how it can only create a straight color boundary — it'll never make that checkerboard pattern. The <strong>right grid</strong> uses a network with a <strong>hidden layer</strong> (more on that in a moment). Watch how it curves and bends the boundary until it gets the pattern right!</p>
 
       <div class="interactive-area">
         <div class="grid-2">
@@ -49,11 +110,99 @@
         </div>
         <div class="narration" id="xor-narration">Press "Train Both" to watch the single neuron struggle while the 2-layer network learns XOR!</div>
       </div>
+
+      <h3>What Just Happened?</h3>
+
+      <p>If you hit "Train Both," you saw something remarkable. The single neuron on the left <em>tried its best</em> — its loss went down a bit, and the color boundary shifted around — but it could never create the checkerboard pattern XOR requires. It's stuck forever drawing a straight line.</p>
+
+      <p>The two-layer network on the right, however, gradually bent its decision boundary into a shape that correctly separates all four dots. The <strong>loss</strong> (how wrong the network is) dropped close to zero, meaning it nailed it.</p>
+
+      <p>This is the power of <strong>layers</strong>. A single neuron draws lines. Multiple layers draw <em>curves, corners, and any shape you need</em>.</p>
     </div>
 
+    <!-- ────────────────────────────────────────────── -->
+    <!-- SECTION 3: What is a Hidden Layer? -->
+    <!-- ────────────────────────────────────────────── -->
+    <div class="section fade-in-up delay-1">
+      <h2>🫣 What is a Hidden Layer?</h2>
+
+      <p>You've been hearing "hidden layer" — let's define it properly.</p>
+
+      <p>A neural network is organized in <strong>layers</strong>. Think of it like an assembly line in a factory:</p>
+
+      <ol>
+        <li><strong>Input layer</strong> — This is where raw data comes in. For our XOR problem, the input is two numbers (the two switch positions). You can see this layer; it's your data.</li>
+        <li><strong>Hidden layer(s)</strong> — These are the layers in between. They take the input, transform it, and pass results forward. They're called "<strong>hidden</strong>" because you don't directly see their values in the final answer — they're like the <em>intermediate thoughts in your head</em> before you reach a conclusion. When you solve a math problem, you don't just jump from the question to the answer; you have intermediate steps. Hidden layers are those intermediate steps.</li>
+        <li><strong>Output layer</strong> — The final answer. For XOR, it's a single number: close to 1 for "ON" or close to 0 for "OFF."</li>
+      </ol>
+
+      <p>The magic happens in the hidden layers. Each neuron in a hidden layer learns to detect a different <strong>feature</strong> or pattern in the data. In the XOR example, the hidden neurons might learn things like "is switch A on?" and "are both switches the same?" — and then the output neuron combines those intermediate answers to produce the final result.</p>
+
+      <p>The more hidden layers you add, the more <strong>abstract</strong> the thinking becomes. The first layer might detect simple patterns. The second layer combines those into more complex patterns. The third layer combines <em>those</em> into even more complex ones. This is why deep networks (networks with many layers) can recognize faces, understand language, and do other amazing things.</p>
+    </div>
+
+    <!-- ────────────────────────────────────────────── -->
+    <!-- SECTION 4: What is ReLU? -->
+    <!-- ────────────────────────────────────────────── -->
+    <div class="section fade-in-up delay-1">
+      <h2>⚡ Meet ReLU — The Most Popular Activation Function</h2>
+
+      <p>In Chapter 1, you learned about the <strong>sigmoid</strong> activation function — the S-shaped curve that squishes any number into a value between 0 and 1. Sigmoid works, but it has some problems when networks get deep (many layers). The signal can get weaker and weaker as it passes through layers — a problem called the <strong>vanishing gradient</strong>.</p>
+
+      <p>Enter <strong>ReLU</strong>, which stands for <strong>Rectified Linear Unit</strong>. Don't let the fancy name scare you. Here's what ReLU does:</p>
+
+      <ul>
+        <li>If the number is <strong>positive</strong>, <strong>keep it</strong> exactly as-is.</li>
+        <li>If the number is <strong>negative</strong>, <strong>make it 0</strong>.</li>
+      </ul>
+
+      <p>That's it. Seriously. For example:</p>
+      <ul>
+        <li>ReLU(5) = 5 ✅</li>
+        <li>ReLU(0.3) = 0.3 ✅</li>
+        <li>ReLU(-2) = 0 🚫</li>
+        <li>ReLU(-100) = 0 🚫</li>
+      </ul>
+
+      <p>It's like a gate that only lets positive signals through. Why is this so popular? Because it's <strong>fast</strong> (just a simple comparison), it doesn't squish large values (so signals stay strong through many layers), and it works really well in practice. ReLU is the default choice for most modern neural networks.</p>
+
+      <p>You'll also see <strong>Tanh</strong> in the demos below. Tanh is like sigmoid's cousin — it squishes values between -1 and +1 instead of 0 and 1. Each activation function has its strengths, but ReLU is the workhorse of modern deep learning.</p>
+    </div>
+
+    <!-- ────────────────────────────────────────────── -->
+    <!-- SECTION 5: Build Your Own Network -->
+    <!-- ────────────────────────────────────────────── -->
     <div class="section fade-in-up delay-2">
       <h2>🔬 Build Your Own Network</h2>
-      <p>Choose a topology and watch the decision boundary form in real time. Add more neurons to solve harder problems!</p>
+
+      <p>Now it's your turn to experiment! The demo below lets you build a custom neural network and watch it learn in real time. Before you dive in, let's explain what everything means.</p>
+
+      <h3>The Controls</h3>
+
+      <p><strong>Hidden Layers</strong> — This dropdown lets you choose the <strong>topology</strong> (shape) of your network. Here's what the options mean:</p>
+      <ul>
+        <li><strong>"1 layer (4 neurons)"</strong> — There's one hidden layer with 4 neurons between the input and output. This is a simple network that can handle basic patterns.</li>
+        <li><strong>"2 layers (4, 4)"</strong> — Two hidden layers, each with 4 neurons. The first layer detects simple features, the second layer combines them into more complex features.</li>
+        <li><strong>"2 layers (6, 4)"</strong> — Two hidden layers, with 6 neurons in the first and 4 in the second. More neurons in the first layer = more initial features detected.</li>
+        <li><strong>"3 layers (4, 4, 4)"</strong> and <strong>"3 layers (8, 6, 4)"</strong> — Three hidden layers for even more abstract thinking. Good for complex patterns like spirals.</li>
+      </ul>
+      <p>Rule of thumb: <strong>more layers = more abstract thinking</strong>. <strong>More neurons per layer = more nuance</strong> in each level of thinking.</p>
+
+      <p><strong>Dataset</strong> — The shape of data the network needs to separate. XOR is the diagonal pattern you already know. Circle means one class is inside a ring and the other is outside. Spiral is two classes wound around each other — the hardest pattern here!</p>
+
+      <p><strong>Activation</strong> — The squishing function used by each hidden neuron. Sigmoid, ReLU, and Tanh — you know these from earlier in this chapter and from Chapter 1.</p>
+
+      <h3>The Display</h3>
+
+      <p>On the <strong>left</strong>, you see the <strong>decision boundary canvas</strong>. This is the same kind of colored grid from the XOR demo — purple means the network says "1," light means "0." The dots are the training data points. As the network learns, the colors shift to correctly surround each group of dots.</p>
+
+      <p>On the <strong>right</strong>, you see two things:</p>
+      <ul>
+        <li>The <strong>network diagram</strong> — Circles represent <strong>neurons</strong>. Lines between them represent <strong>connections</strong> (weights). The colors and thickness of the lines show the strength of each connection — brighter/thicker means the weight has a larger value, meaning that connection is more important.</li>
+        <li>The <strong>loss chart</strong> — A graph that shows the network's error over time. You want this to go <strong>down</strong>. When it flattens near zero, the network has learned the pattern.</li>
+      </ul>
+
+      <p>The <strong>Parameters</strong> stat shows the total number of <strong>weights + biases</strong> the network needs to learn. A network with topology [2, 4, 4, 1] has 2×4 + 4 + 4×4 + 4 + 4×1 + 1 = 37 parameters. More parameters = more power, but also more to learn.</p>
 
       <div class="interactive-area">
         <div class="controls">
@@ -102,6 +251,34 @@
           </div>
         </div>
       </div>
+
+      <h3>Things to Try</h3>
+
+      <ul>
+        <li>🌀 Select the <strong>Spiral</strong> dataset with just <strong>1 layer (4 neurons)</strong>. Hit Train. Watch it struggle — one layer can't draw spiral-shaped boundaries!</li>
+        <li>Now switch to <strong>2 layers (4, 4)</strong> and reset. Train again. Better, right?</li>
+        <li>Try <strong>3 layers (8, 6, 4)</strong> with Spiral. Watch how more layers let the network carve increasingly complex boundaries.</li>
+        <li>Switch between <strong>ReLU</strong> and <strong>Sigmoid</strong> on the same dataset. Notice how ReLU often learns faster and creates sharper boundaries.</li>
+        <li>Try the <strong>Circle</strong> dataset with just 1 layer. Even a simple network can handle this — why? Because a circle boundary can be approximated with a few straight cuts combined together.</li>
+      </ul>
+    </div>
+
+    <!-- ────────────────────────────────────────────── -->
+    <!-- SECTION 6: What You Just Learned -->
+    <!-- ────────────────────────────────────────────── -->
+    <div class="section fade-in-up delay-2">
+      <h2>📝 What You Just Learned</h2>
+
+      <ul>
+        <li><strong>XOR</strong> means "one or the other, but not both" — and a single neuron can't solve it because it can only draw a straight line.</li>
+        <li>Adding a <strong>hidden layer</strong> (neurons between input and output) gives the network the ability to draw curves and complex boundaries.</li>
+        <li><strong>Hidden layers</strong> are called "hidden" because you don't see their values directly — they're the intermediate thinking steps.</li>
+        <li><strong>ReLU</strong> (Rectified Linear Unit) is the most popular activation function: keep positive numbers, zero out negatives.</li>
+        <li><strong>More layers</strong> = more abstract thinking. <strong>More neurons per layer</strong> = more nuance at each level.</li>
+        <li>The <strong>decision boundary</strong> is the shape the network draws to separate different categories — and it gets more complex as you add layers.</li>
+      </ul>
+
+      <p>In the next chapter, you'll get a full <strong>playground</strong> where you can experiment with even more datasets, adjust the learning rate, and really see how all these pieces work together. Let's go! 🚀</p>
     </div>
   </div>
 

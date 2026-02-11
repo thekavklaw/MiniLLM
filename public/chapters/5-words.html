@@ -20,23 +20,319 @@
       <p>ChatGPT doesn't see words — it sees numbers. Let's explore how text becomes vectors.</p>
     </div>
 
+    <!-- ============================================================ -->
+    <!-- BIG INTRO                                                     -->
+    <!-- ============================================================ -->
+    <div class="section fade-in-up delay-1">
+      <h2>🌉 Bridging the Gap: From Numbers to Language</h2>
+
+      <p>
+        So far in this course, we've been feeding <em>numbers</em> into neural networks.
+        Inputs like pixel values, coordinates, or simple measurements. And the networks
+        learned to do useful things with those numbers — classify, predict, and even
+        play around in the playground you just tried in Chapter 4.
+      </p>
+
+      <p>
+        But here's the thing: <strong>ChatGPT works with text</strong> — words, sentences,
+        paragraphs, entire conversations. You type a question in plain English (or Spanish,
+        or Japanese, or any language), and it types back an answer. How on earth does a
+        neural network, which <em>only</em> understands numbers, process human language?
+      </p>
+
+      <p>
+        This chapter is where we bridge that gap. We're going to answer two big questions:
+      </p>
+
+      <ol>
+        <li><strong>How do we chop text into pieces a computer can work with?</strong> (This is called <strong>tokenization</strong>.)</li>
+        <li><strong>How do we turn those pieces into numbers that capture meaning?</strong> (This is called <strong>embedding</strong>.)</li>
+      </ol>
+
+      <p>
+        By the end of this chapter, you'll understand the very first thing that happens
+        when you type a message into ChatGPT — before any "thinking" occurs, before any
+        response is generated. It all starts here: turning your words into numbers.
+      </p>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- TOKENIZATION                                                  -->
+    <!-- ============================================================ -->
     <div class="section fade-in-up delay-1">
       <h2>✂️ Tokenization: Chopping Text Into Pieces</h2>
-      <p>Before a language model can process text, it splits it into <strong>tokens</strong> — usually word pieces. Type something below to see it tokenized!</p>
+
+      <p>
+        Before a language model can do <em>anything</em> with your text, it needs to
+        break that text into small, manageable chunks. These chunks are called
+        <strong>tokens</strong>. Think of tokens as the "atoms" of language for a
+        computer — the smallest meaningful pieces it works with.
+      </p>
+
+      <h3>Why not just use whole words?</h3>
+
+      <p>
+        Your first instinct might be: "Just split on spaces! Each word is one token."
+        That sounds reasonable, but it falls apart quickly. Here's why:
+      </p>
+
+      <ul>
+        <li>
+          <strong>There are WAY too many words.</strong> The English language alone has
+          over 170,000 words in current use. Add in names, slang, technical jargon,
+          typos, other languages, and you're looking at millions. The computer would
+          need a separate entry for every single one.
+        </li>
+        <li>
+          <strong>New words appear all the time.</strong> What about "unforgettable"?
+          Or "ChatGPT"? Or someone's username like "xXDragonSlayer99Xx"? A whole-word
+          system would see these as completely unknown — it would have no idea what to
+          do with them.
+        </li>
+        <li>
+          <strong>Related words look totally different.</strong> "run", "running",
+          "runner", and "runs" are obviously related, but as whole words they'd each
+          get completely separate, unrelated entries.
+        </li>
+      </ul>
+
+      <h3>The solution: Subword Tokenization (BPE)</h3>
+
+      <p>
+        Modern language models use a clever trick called <strong>Byte Pair Encoding</strong>,
+        or <strong>BPE</strong> for short. Here's the basic idea, explained step by step:
+      </p>
+
+      <ol>
+        <li>
+          <strong>Start with individual characters.</strong> Your vocabulary begins with
+          just the alphabet: a, b, c, ... z, plus punctuation and spaces. Every possible
+          word can be spelled out character by character.
+        </li>
+        <li>
+          <strong>Find the most common pair.</strong> Look through a huge pile of text
+          (billions of words from the internet) and find which two characters appear
+          next to each other most often. Maybe it's "t" + "h" → "th".
+        </li>
+        <li>
+          <strong>Merge that pair into a new token.</strong> Now "th" is a single token
+          in your vocabulary.
+        </li>
+        <li>
+          <strong>Repeat thousands of times.</strong> Next most common pair might be
+          "th" + "e" → "the". Then maybe "in" + "g" → "ing". Keep going until you have
+          a vocabulary of about 50,000 to 100,000 tokens.
+        </li>
+      </ol>
+
+      <p>
+        The result? Common words like "the" and "and" become single tokens. But rare or
+        long words get split into smaller, recognizable pieces. For example:
+      </p>
+
+      <ul>
+        <li><strong>"unbelievable"</strong> might become → <code>["un", "##believ", "##able"]</code></li>
+        <li><strong>"ChatGPT"</strong> might become → <code>["Chat", "##G", "##PT"]</code></li>
+        <li><strong>"the"</strong> stays as → <code>["the"]</code> (it's common enough to be its own token)</li>
+      </ul>
+
+      <h3>What's with the "##" prefix?</h3>
+
+      <p>
+        You'll notice some tokens start with <strong>##</strong>. This is a marker that
+        means <em>"I'm a continuation — I'm part of a larger word, not a word by myself."</em>
+        So when you see <code>["un", "##believ", "##able"]</code>, the computer knows
+        that "##believ" and "##able" attach to "un" to form one word. Without the ##
+        marker, the computer might think each piece is a separate word.
+      </p>
+
+      <h3>Real numbers</h3>
+
+      <p>
+        GPT-4 has a vocabulary of roughly <strong>100,000 tokens</strong>. That might sound
+        like a lot, but remember — it covers every language, programming code, emoji,
+        mathematical notation, and more. Each token gets assigned a unique ID number
+        (like token #4821 = "hello", token #952 = "##ing"). These ID numbers are what
+        actually get fed into the neural network.
+      </p>
+
+      <h3>Try it yourself!</h3>
+
+      <p>
+        Type something in the box below and watch it get tokenized. Notice how longer
+        or unusual words get split into subword pieces (marked with ##), while short
+        common words stay whole.
+      </p>
+
       <div class="interactive-area">
         <input type="text" id="token-input" value="The quick brown fox jumps over the lazy dog" style="width:100%;padding:12px 16px;border:2px solid var(--card-border);border-radius:var(--radius-sm);font-family:inherit;font-size:1rem;outline:none;" placeholder="Type a sentence...">
         <div id="token-output" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:16px;min-height:40px;"></div>
         <div class="narration" id="token-narration" style="margin-top:12px;"></div>
       </div>
+
+      <p style="margin-top:18px;">
+        <strong>What just happened?</strong> The tokenizer examined your text and split it
+        into pieces from its vocabulary. Each colored chip is one token — one entry that
+        the neural network will process. Notice that common short words stay whole, while
+        longer words get broken into familiar sub-pieces. This is <em>exactly</em> what
+        happens inside ChatGPT before it even begins to "think" about your message.
+      </p>
+
+      <p>
+        Try typing something unusual — a made-up word, a long compound word like
+        "antidisestablishmentarianism", or even some gibberish. Watch how the tokenizer
+        still breaks it into recognizable pieces. That's the beauty of BPE: it can handle
+        <em>any</em> text, even words it's never seen before, by splitting them into
+        known sub-parts.
+      </p>
     </div>
 
+    <!-- ============================================================ -->
+    <!-- EMBEDDINGS                                                    -->
+    <!-- ============================================================ -->
     <div class="section fade-in-up delay-2">
       <h2>📍 Word Embeddings: Words as Points in Space</h2>
-      <p>Each token gets mapped to a vector — a list of numbers that captures its meaning. Words with similar meanings end up close together. Drag the words to explore!</p>
-      <div class="interactive-area">
-        <canvas id="embed-canvas" width="700" height="450"></canvas>
-        <div class="narration" style="margin-top:12px;">Each dot is a word. Words with similar meanings cluster together. In real models, these vectors have hundreds of dimensions — here we show just 2D.</div>
+
+      <p>
+        Okay, so we've chopped our text into tokens and assigned each one an ID number.
+        But here's a problem: those ID numbers are <em>arbitrary</em>. Token #4821
+        ("hello") and token #4822 ("help") might have very similar meanings, but their
+        ID numbers don't reflect that. The number 4821 isn't "close to" 4822 in any
+        meaningful way — it's just the next number in a list.
+      </p>
+
+      <p>
+        We need something better. We need a way to represent words as numbers where
+        <strong>similar words have similar numbers</strong>. That's where
+        <strong>embeddings</strong> come in.
+      </p>
+
+      <h3>What is a vector? (Don't panic — it's just a list of numbers)</h3>
+
+      <p>
+        An <strong>embedding</strong> turns each token into a <strong>vector</strong>.
+        And a vector is literally just a list of numbers. That's it. No fancy math
+        needed to understand the concept.
+      </p>
+
+      <p>
+        Here's an analogy: your house has a location on Earth, described by two numbers
+        — <strong>latitude</strong> and <strong>longitude</strong>. Those two numbers
+        are a "vector" that pinpoints where you live. Houses that are near each other
+        have similar latitude and longitude values.
+      </p>
+
+      <p>
+        Word embeddings work the same way, except instead of physical location, they
+        describe location in <strong>"meaning space."</strong> Instead of just 2 numbers
+        (latitude and longitude), each word gets <em>hundreds</em> of numbers — each
+        one capturing a different aspect of the word's meaning. You can think of it as
+        giving every word coordinates in a vast, multidimensional map of meaning.
+      </p>
+
+      <h3>Why does this work? The magic of "closeness"</h3>
+
+      <p>
+        The incredible thing about embeddings is that <strong>words with similar meanings
+        end up at similar coordinates</strong>. "Dog" and "cat" are close together.
+        "King" and "queen" are close together. "Happy" and "joyful" are practically
+        on top of each other.
+      </p>
+
+      <p>
+        But it gets even cooler. The <em>directions</em> in this space capture
+        relationships. There's a famous example that blew people's minds when it was
+        first discovered:
+      </p>
+
+      <div class="narration" style="text-align:center;font-size:1.2rem;padding:20px;">
+        <strong>king</strong> − <strong>man</strong> + <strong>woman</strong> ≈ <strong>queen</strong>
       </div>
+
+      <p>
+        Yes, really. If you take the embedding vector for "king," subtract the vector
+        for "man," and add the vector for "woman," the result is a point in space
+        that's very close to "queen." The direction from "man" to "woman" captures
+        something about gender, and you can <em>apply</em> that direction to other words.
+        This actually works in real trained embeddings — it's not a trick or a
+        simplification.
+      </p>
+
+      <h3>How are embeddings learned?</h3>
+
+      <p>
+        You might wonder: who decides that "king" should be at coordinates [0.7, 0.8, ...]
+        and "queen" at [0.75, 0.85, ...]? The answer is: <strong>nobody</strong>. The
+        network learns them during training.
+      </p>
+
+      <p>
+        Here's the rough idea: the embedding starts as random numbers. During training,
+        the network reads billions of sentences. Every time it sees "dog" and "puppy"
+        used in similar contexts (like "I walked my ___" or "The ___ barked"), it
+        nudges their embedding vectors a tiny bit closer together. Over millions of
+        examples, words that appear in similar contexts end up with similar embeddings.
+        It's like the network is building its own dictionary of meaning — not from
+        definitions, but from <em>patterns of usage</em>.
+      </p>
+
+      <h3>Explore the embedding space</h3>
+
+      <p>
+        The scatter plot below shows words positioned according to their embeddings,
+        reduced to 2D so we can actually see them. Notice how words cluster by category:
+        animals together, emotions together, royalty together. <strong>You can drag the
+        words around</strong> to see what happens when you move them — but notice how
+        the original positions already group similar words together.
+      </p>
+
+      <div class="interactive-area">
+        <canvas id="embed-canvas" width="800" height="550"></canvas>
+        <div class="narration" style="margin-top:12px;">Each dot is a word, colored by category. Words with similar meanings naturally cluster together. Drag any word to reposition it — but the initial layout shows how embeddings group related concepts.</div>
+      </div>
+
+      <p style="margin-top:18px;">
+        <strong>What just happened?</strong> You're looking at a simplified version of
+        what happens inside every language model. Each of those dots represents a word's
+        embedding — its "coordinates" in meaning space. In this demo, we're showing just
+        2 dimensions so it fits on your screen. In reality, GPT-4 uses
+        <strong>12,288 dimensions</strong> per word — that's 12,288 numbers for every
+        single token! We obviously can't visualize 12,288-dimensional space, but the
+        principle is exactly the same: similar words cluster together, and the directions
+        between words capture meaningful relationships.
+      </p>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- WHAT YOU LEARNED                                              -->
+    <!-- ============================================================ -->
+    <div class="section fade-in-up delay-2">
+      <h2>🎯 What You Just Learned</h2>
+
+      <p>Let's recap the two big ideas from this chapter:</p>
+
+      <ol>
+        <li>
+          <strong>Tokenization</strong> breaks text into small pieces called tokens.
+          Modern models use Byte Pair Encoding (BPE) to create a vocabulary of
+          ~50,000–100,000 subword tokens. This means they can handle any word — even
+          ones they've never seen before — by splitting it into known pieces.
+        </li>
+        <li>
+          <strong>Embeddings</strong> turn each token into a vector (a list of hundreds
+          or thousands of numbers) that captures its meaning. Words with similar meanings
+          get similar vectors, and the directions between vectors capture relationships
+          like gender, tense, or category.
+        </li>
+      </ol>
+
+      <p>
+        So when you type "Hello, how are you?" into ChatGPT, the first thing that happens
+        is: your text gets tokenized into pieces, and each piece gets converted into a
+        long list of numbers via its embedding. <em>Only then</em> does the actual neural
+        network start processing — which brings us to the next chapter, where we'll
+        learn about the most important innovation in modern AI: <strong>attention</strong>.
+      </p>
     </div>
   </div>
 

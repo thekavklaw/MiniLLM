@@ -12,17 +12,81 @@
     <a href="/chapters/1-neuron.html">← Prev</a>
     <span class="nav-title">Chapter 2: Learning</span>
     <a href="/chapters/3-layers.html">Next →</a>
-    </nav>
+  </nav>
   <div class="chapter-content">
     <div class="chapter-header fade-in-up">
       <div class="chapter-number">Chapter 2</div>
       <h1>Neurons That Learn</h1>
-      <p>How does a neuron figure out the right weights? By rolling a ball downhill on the "loss landscape."</p>
+      <p>In Chapter 1, you manually set the weight and bias by hand. That was fun, but imagine doing that for a network with <em>billions</em> of weights. Impossible! In this chapter, we'll discover how neurons figure out the right weights <strong>on their own</strong> — by learning from examples.</p>
     </div>
 
+    <!-- ════════════════════════════════════════════ -->
+    <!-- SECTION 1: What is Training?                -->
+    <!-- ════════════════════════════════════════════ -->
+    <div class="section fade-in-up delay-1">
+      <h2>🎸 What Does "Training" Mean?</h2>
+
+      <p>Have you ever tuned a guitar? You pluck a string, listen to the sound, and then turn the tuning peg a tiny bit. Pluck again — closer? Turn a little more. You keep repeating this cycle until the note sounds right. You never calculate the exact position of the peg with a formula — you just <strong>listen and adjust</strong>.</p>
+
+      <p><strong>Training</strong> a neural network works the same way. We show the network an example (like an input-output pair), let it make a prediction, check how wrong it was, and then nudge the weights slightly to make it less wrong. Then we do it again. And again. Thousands of times. Each time, the network gets a tiny bit better.</p>
+
+      <p>But to do this, we need a way to measure "how wrong" the network is. That measurement has a name: <strong>loss</strong>.</p>
+
+      <h3>📊 What is Loss?</h3>
+
+      <p><strong>Loss</strong> is a single number that tells you how wrong the network's predictions are. Think of it like a score in golf: <strong>lower is better</strong>. A loss of 0 means the network is perfect — every prediction exactly matches the correct answer. A high loss means the network is way off.</p>
+
+      <p>For example, if the correct answer is 1.0 and the network predicts 0.3, the loss captures that gap. The specific formula we'll use is called <strong>Mean Squared Error (MSE)</strong> — it takes the difference between the prediction and the correct answer, squares it (so negative errors and positive errors both count), and averages across all examples. But you don't need to memorize that. Just remember: <strong>loss = how wrong we are. Lower is better.</strong></p>
+
+      <h3>🔄 What is an Epoch?</h3>
+
+      <p>When the network looks at <em>every single training example once</em>, that's called one <strong>epoch</strong> (pronounced "EP-ock"). If you have 4 training examples and the network sees all 4, that's 1 epoch. If it sees all 4 again, that's 2 epochs. Training usually takes hundreds or thousands of epochs — each pass through the data makes the network a little bit smarter.</p>
+
+      <p>Think of epochs like laps around a track. One lap = one epoch. The more laps you run, the more fit you get (up to a point). Similarly, the more epochs you train, the lower the loss goes — the network keeps getting better.</p>
+    </div>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!-- SECTION 2: How Learning Works Step by Step  -->
+    <!-- ════════════════════════════════════════════ -->
+    <div class="section fade-in-up">
+      <h2>🧩 How Learning Works: Step by Step</h2>
+
+      <p>Let's walk through exactly what happens during one training step. There are 5 stages, and they repeat over and over:</p>
+
+      <ol>
+        <li>
+          <strong>Forward Pass:</strong> Feed an input into the network and let it calculate an output. This is exactly what you did in Chapter 1 — input goes in, gets multiplied by weights, bias gets added, sigmoid squishes the result. The network makes its best guess.
+        </li>
+        <li>
+          <strong>Calculate the Loss:</strong> Compare the network's guess to the correct answer. How far off was it? This gives us the loss — one number summarizing the error.
+        </li>
+        <li>
+          <strong>Backpropagation:</strong> This is the clever part. The network works <em>backwards</em> from the loss to figure out which weights were most responsible for the error. It's like tracing a wrong answer on a test back to the specific thing you misunderstood. The term <strong>backpropagation</strong> (or "backprop" for short) literally means "propagating the error backward" through the network.
+        </li>
+        <li>
+          <strong>Update the Weights:</strong> Now that we know which weights caused the error, we nudge them in the direction that would reduce the loss. Big error → bigger nudge. Small error → tiny nudge. The size of the nudge is controlled by a setting called the <strong>learning rate</strong> (more on that below).
+        </li>
+        <li>
+          <strong>Repeat:</strong> Do it all again with the next example. After one full pass through all examples (one epoch), the network is a little smarter. After hundreds of epochs, it can be remarkably accurate.
+        </li>
+      </ol>
+
+      <p>This cycle — forward, measure error, trace backwards, adjust, repeat — is the heartbeat of all machine learning. Every AI you've ever used was trained this way, including ChatGPT.</p>
+    </div>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!-- SECTION 3: Gradient Descent visualization   -->
+    <!-- ════════════════════════════════════════════ -->
     <div class="section fade-in-up delay-1">
       <h2>📉 Gradient Descent: Rolling Downhill</h2>
-      <p>Imagine the neuron's "wrongness" (loss) as a hilly landscape. Gradient descent is like dropping a ball — it rolls downhill toward the lowest point, which is the best set of weights.</p>
+
+      <p>Here's a beautiful way to visualize training. Imagine that we plot the loss (how wrong the network is) as a landscape of hills and valleys. The height of the landscape at any point represents the loss for a particular weight value. Our goal is to find the <strong>lowest valley</strong> — the weight that gives the smallest loss.</p>
+
+      <p><strong>Gradient descent</strong> is the algorithm that finds that valley. It works by dropping a ball onto the landscape and letting gravity do the work. The ball rolls downhill, always moving toward lower loss. The <strong>gradient</strong> is just a fancy word for "which direction is downhill" — it tells the ball which way to roll.</p>
+
+      <p>The <strong>learning rate</strong> controls how big each step is. A small learning rate means the ball takes tiny, careful steps (slow but precise). A large learning rate means big, bold leaps (fast but might overshoot the valley and bounce around). Try adjusting the learning rate slider below and see the difference!</p>
+
+      <p><strong>Try this:</strong> Click "Drop the Ball" and watch it roll to the bottom. Then reset, crank the learning rate up to 0.5, and drop again — see how it behaves differently?</p>
 
       <div class="interactive-area">
         <canvas id="loss-canvas" width="600" height="300"></canvas>
@@ -37,11 +101,51 @@
         </div>
         <div class="narration" id="ball-narration">Click "Drop the Ball" to watch gradient descent find the minimum!</div>
       </div>
+
+      <p>What you just saw is the core of how every neural network learns. The ball finding the valley is the network finding the best weights. In real networks, the landscape has millions of dimensions (one per weight) instead of just one — but the principle is identical: follow the slope downhill.</p>
     </div>
 
+    <!-- ════════════════════════════════════════════ -->
+    <!-- SECTION 4: AND gate training                -->
+    <!-- ════════════════════════════════════════════ -->
     <div class="section fade-in-up delay-2">
       <h2>🎯 Activity: Train on the AND Gate</h2>
-      <p>The AND gate: output is 1 only when <strong>both</strong> inputs are 1. Can our neuron learn this? Watch it adjust weights in real time!</p>
+
+      <p>Let's put this all together and watch a neuron <strong>actually learn</strong>. We'll train it on a classic problem: the <strong>AND gate</strong>.</p>
+
+      <p>An AND gate is a simple rule: the output is <strong>1 only when both inputs are 1</strong>. Here are all 4 possible input combinations:</p>
+
+      <ul>
+        <li><strong>[0, 0] → 0</strong> (neither is 1, so output is 0)</li>
+        <li><strong>[0, 1] → 0</strong> (only one is 1, so output is 0)</li>
+        <li><strong>[1, 0] → 0</strong> (only one is 1, so output is 0)</li>
+        <li><strong>[1, 1] → 1</strong> (both are 1, so output is 1! ✅)</li>
+      </ul>
+
+      <p>Our neuron starts with random weights — it has no idea what the AND gate is. Then we train it: show it the 4 examples over and over, and let gradient descent adjust the weights to minimize the loss. After enough epochs, the neuron should <em>figure out</em> the AND gate on its own!</p>
+
+      <h3>🗺️ Reading the Decision Boundary</h3>
+
+      <p>On the left below, you'll see a colorful 2D grid. Here's how to read it:</p>
+
+      <ul>
+        <li>The <strong>purple/dark regions</strong> are where the neuron outputs a value close to <strong>1</strong> (it's saying "yes, this is AND").</li>
+        <li>The <strong>light/bright regions</strong> are where the neuron outputs a value close to <strong>0</strong> (it's saying "no").</li>
+        <li>The <strong>4 dots</strong> represent the 4 input combinations: (0,0), (0,1), (1,0), and (1,1). Each dot shows the neuron's current prediction.</li>
+        <li>As training progresses, you should see the purple region shift so that <strong>only the (1,1) dot ends up in the purple zone</strong> — that means the neuron learned the AND gate!</li>
+      </ul>
+
+      <h3>📈 Reading the Loss Chart</h3>
+
+      <p>On the right, you'll see a chart that tracks the loss over time:</p>
+
+      <ul>
+        <li><strong>X axis = Epoch</strong> (training round number). Each tick is one pass through all 4 examples.</li>
+        <li><strong>Y axis = Loss</strong> (error). How wrong the network is overall. Remember: lower is better!</li>
+        <li>You should see the line <strong>drop from high to low</strong> as training progresses — that's the network getting smarter!</li>
+      </ul>
+
+      <p>Try clicking <strong>Train</strong> and watch both visualizations update in real time. You can also try changing the <strong>learning rate</strong> — a higher rate makes training faster but can be unstable. A lower rate is safer but slower.</p>
 
       <div class="interactive-area">
         <div class="grid-2">
@@ -56,6 +160,7 @@
             </div>
           </div>
           <div>
+            <p style="margin:0 0 8px 0; font-size:0.9em; opacity:0.7; text-align:center;"><strong>Loss over time</strong> — X: epoch (training round) · Y: loss (error)</p>
             <canvas id="and-loss-chart" width="400" height="200"></canvas>
             <div id="and-outputs" class="narration" style="margin-top:12px;">Press Train to begin.</div>
           </div>
@@ -70,6 +175,27 @@
           </div>
         </div>
       </div>
+
+      <p>After training completes, look at the final weights. You should see both weights are <strong>positive</strong> (meaning the neuron cares about both inputs) and the bias is <strong>negative</strong> (meaning the neuron's default answer is "no" — it only says "yes" when both inputs push hard enough to overcome the negative bias). That's the AND gate, learned from scratch!</p>
+    </div>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!-- SECTION 5: What just happened?              -->
+    <!-- ════════════════════════════════════════════ -->
+    <div class="section fade-in-up">
+      <h2>🤯 What Just Happened?</h2>
+
+      <p>Let's step back and appreciate what you just witnessed. You took a neuron that started with <strong>completely random weights</strong> — it had no idea what an AND gate was. Then you clicked "Train," and the neuron <em>figured it out by itself</em> through nothing more than looking at examples and adjusting its weights to reduce error.</p>
+
+      <p>No one told the neuron "make weight 1 positive" or "set the bias to -5." It discovered those values on its own through gradient descent. <strong>That's machine learning.</strong></p>
+
+      <p>Now scale this up: instead of 2 inputs and 1 neuron, imagine millions of neurons with billions of connections, trained on trillions of words from the internet. The same process — forward pass, calculate loss, backpropagate, update weights, repeat — is how ChatGPT learned to write, reason, and have conversations.</p>
+
+      <p style="text-align:center; padding:20px; background:rgba(139,92,246,0.06); border-radius:12px; margin-top:16px;">
+        <strong>🔑 The key insight:</strong> Neural networks aren't programmed with rules.<br>
+        They <em>learn</em> patterns from examples, one tiny weight adjustment at a time.<br>
+        <span style="opacity:0.7;">Next up: what happens when we connect many neurons in layers?</span>
+      </p>
     </div>
   </div>
 
