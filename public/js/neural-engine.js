@@ -7,6 +7,8 @@
 
 'use strict';
 
+(function() {
+
 /**
  * Activation functions and their derivatives
  */
@@ -428,3 +430,5 @@ if (typeof module !== 'undefined' && module.exports) {
 if (typeof window !== 'undefined') {
   window.NeuralEngine = { NeuralNetwork, Layer, SingleNeuron, Activations, Losses, Datasets };
 }
+
+})();
