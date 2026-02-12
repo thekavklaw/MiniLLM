@@ -1,2 +1,13 @@
 node_modules/
 .env
+*.db
+*.sqlite
+*.key
+*.pem
+*.secret
+.secrets/
+venv/
+__pycache__/
+*.db-shm
+*.db-wal
+
