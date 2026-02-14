@@ -2,7 +2,23 @@
 (function() {
   'use strict';
 
-  // Turnstile token helper — widget rendered inline, callback defined in index.html
+  // Explicit Turnstile rendering (Cloudflare Rocket Loader can break implicit)
+  function renderTurnstileWidgets() {
+    if (typeof turnstile === 'undefined') { setTimeout(renderTurnstileWidgets, 200); return; }
+    document.querySelectorAll('.cf-turnstile').forEach(function(el) {
+      if (el.dataset.rendered) return;
+      if (el.offsetParent === null) return;
+      el.dataset.rendered = '1';
+      turnstile.render(el, {
+        sitekey: el.dataset.sitekey,
+        theme: el.dataset.theme || 'auto',
+        callback: function(t) { if (el.dataset.callback && window[el.dataset.callback]) window[el.dataset.callback](t); }
+      });
+    });
+  }
+  renderTurnstileWidgets();
+
+  // Turnstile token helper
   function getTurnstileToken() {
     return new Promise((resolve) => {
       if (window._turnstileToken) { resolve(window._turnstileToken); return; }
